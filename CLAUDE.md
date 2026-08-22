@@ -9,19 +9,21 @@ Common Expression Language (CEL). It parses, type-checks and evaluates
 CEL inside PostgreSQL, with no server-side extension, no shared library,
 and no procedural language beyond `plpgsql`.
 
-**Status: scaffolding only.** What exists is the harness, not the
-evaluator: `compose.yaml` (a disposable Postgres that installs `sql/`
-during initdb), `sql/000_install.sql` (the `cel` schema, a `schema_version`
-table and `cel.version()` — nothing that evaluates anything), a Go suite
-whose only tests assert that the database is reachable and the schema
-installed, and a CI workflow that runs them.
-
-No parser, checker, evaluator, registry table or conformance runner has
-been written. Everything about those in the sections below describes the
-design the next commits are meant to realise, not code you can read.
-When you implement a piece of it, replace the prescriptive wording here
-with what the code actually does — and when the code and this file
-disagree, the code is right and this file is a bug.
+**Status: core pipeline working, well-known types pending.** The
+registry tables (`sql/010_registry.sql`), value representation and
+comparison (`020_values.sql`), parser and macro engine
+(`030_parse.sql`), type checker (`040_check.sql`), evaluator
+(`050_eval.sql`) and standard library (`060_stdlib.sql`) exist and
+run the conformance corpus: the core-language files (basic,
+comparisons, conversions, logic, integer/fp math, lists, string,
+macros, fields, namespace, plumbing, parse) pass except for cases
+needing the well-known types. Timestamps/durations, the WKT
+wrappers, `Struct`/`Value`/`Any`, unknowns, and every extension
+library are still unwritten; sections below describing those are
+design, not code. When you implement a piece, replace the
+prescriptive wording with what the code actually does — and when the
+code and this file disagree, the code is right and this file is a
+bug.
 
 "Zero-dependency" is the product claim and the design constraint: a
 consumer installs cel4postgres by running SQL scripts against a database
@@ -97,9 +99,10 @@ anything.
 ## Architecture
 
 ```
-cel.parse(source text, env text)              → ast   jsonb
-cel.check(ast jsonb, env text)                → ast   jsonb
-cel.eval(ast jsonb, activation jsonb, env text) → value jsonb
+cel.parse(source text, env text)                → ast   jsonb
+cel.check(ast jsonb, env text[, options jsonb]) → ast   jsonb
+cel.eval(ast jsonb, activation jsonb, env text[, options jsonb])
+                                                → value jsonb
 cel.evaluate(source text, activation jsonb, env text) → value jsonb
 ```
 
@@ -108,6 +111,14 @@ session GUC and never a default baked into the evaluator: one
 installation has to serve the spec-conformant environment, the OpenFGA
 dialect and a client's own dialect simultaneously, and a global would
 collapse them.
+
+`options` carries per-call context that is not part of the
+environment: the namespace `container` and, for `check`, extra ident
+declarations (`decls`). `eval` accepts a container because unchecked
+evaluation resolves names at runtime — the conformance corpus's
+disable_check container cases cannot pass without it. Checked ASTs
+ignore it: the checker has already rewritten every name to its
+qualified form. The plain three-argument forms remain as wrappers.
 
 Macros expand during `parse`. Overloads resolve during `check`, which
 binds an **overload id** into the AST. `eval` dispatches on that bound id
