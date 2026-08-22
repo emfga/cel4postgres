@@ -42,11 +42,18 @@ comprehensions), overflow and conversion semantics, and error/unknown
 propagation.
 
 **Out of scope (v1):** protobuf messages, field selection over messages,
-proto2/proto3 presence semantics, enums, and the wrapper types
-(`Int32Value` and family). These require a descriptor pool inside
-Postgres and buy nothing for the JSON-shaped data cel4postgres targets.
-The corresponding conformance files (`proto2`, `proto3`, `enums`,
-`wrappers`, `proto2_ext`) are out of scope with them.
+proto2/proto3 presence semantics, and enums. These require a
+descriptor pool inside Postgres and buy nothing for the JSON-shaped
+data cel4postgres targets. The corresponding conformance files
+(`proto2`, `proto3`, `enums`, `wrappers`, `proto2_ext`) are out of
+scope with them.
+
+The wrapper types (`Int32Value` and family) turned out not to need a
+descriptor pool — they are JSON-shaped, constructed by registered
+type rows like every other WKT — so they are in scope and
+implemented in `sql/070_wkt.sql`. The `wrappers` conformance file
+stays skipped only because its cases also need proto3 `TestAllTypes`
+and `Any` unpacking.
 
 **Out of core, in by registration:** every cel-go extension library
 (`strings`, `math`, `lists`, `sets`, `encoders`, `bindings`,
