@@ -306,6 +306,65 @@ unreachable database instead of reporting a bare connection error — a
 red conformance run should never be ambiguous about which of the two
 broke.
 
+## Planning workspaces
+
+Open a workspace under `.claude/workspace/<task-slug>/` when **state has
+to survive this session's context** — a decision settled with the owner,
+a measurement a later stage will read, a question parked for later.
+Duration is not the test. Work that fits in one session needs only the
+harness task list.
+
+`.claude/workspace/` is gitignored. It is working memory, never a
+deliverable: anything that must survive — a rule, a doc, a skip list the
+suite reads — is promoted into the real tree in its own commit.
+
+**Start with `00-decisions.md` and nothing else.** Each artifact below
+appears the first time it has a job, and not before. A full file tree
+created up front is how a workspace fills with documents nothing ever
+cites.
+
+- **`00-decisions.md`** — append-only, numbered, dated; each entry says
+  what was decided and which earlier number it amends. It is the
+  tiebreaker when two documents disagree, and its highest-value entries
+  are the ones that say *do not re-propose X*. **Open questions do not
+  go here** — newest-at-the-bottom means a question stranded mid-file is
+  never reached again. They go in `ISSUES.md`.
+- **`ISSUES.md`** — what the work turned up that the owner has not seen.
+  Closing an entry means amending its status line, never appending a
+  block that contradicts the one above. Every entry ends resolved,
+  accepted, or explicitly re-homed.
+- **Numbered docs (`01-`, `02-`, …)** in the order a fresh session should
+  read them, so later work cites a number instead of re-deriving.
+- **`HANDOFF.md`** — the resumption entry point, written when a phase
+  ends or context runs low. Regenerate it; never edit it in place. Every
+  count, SHA and version in it is re-read from source at write time or
+  left out.
+
+Two artifacts are specific to this project and earn their place the
+moment the evaluator work starts:
+
+- **`measurements.md`** — what cel-go was actually observed to do, with
+  the expression, the result and the pinned version. CLAUDE.md requires
+  confirming behaviour against the reference rather than asserting it;
+  this is where a confirmation goes so the next session does not re-run
+  it, and so a claim without a run stays visibly a hypothesis.
+- **the skip list** — every conformance case or file not attempted, with
+  a reason. It starts here and is **promoted into the suite** as soon as
+  the runner exists: a skip the test binary prints is a fact, and a skip
+  in a gitignored note is a thing nobody sees.
+
+**One writer at a time.** Sessions run concurrently on this repo. A
+session claims the workspace at the top of `HANDOFF.md` with its name
+and start time; another session reads freely but does not write
+decisions or register entries.
+
+**A file exists because something reads it.** Never write one as a
+record that an agent ran.
+
+**Closing.** A workspace is done when every register entry is resolved,
+accepted or re-homed *and* the owner agrees it is finished. Raise the
+close explicitly rather than drifting away from it.
+
 ## Git
 
 - **Never add tool or AI attribution — this is absolute.** Commit
