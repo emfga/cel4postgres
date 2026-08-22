@@ -9,9 +9,11 @@
 //
 // The environment here is deliberately bare: the standard library and
 // standard macros, nothing else. Extension libraries are opt-in per
-// test file, mirroring how cel-go's own conformance runner enables
-// them selectively, because a file that passes only because an
-// extension leaked into the default environment is not a passing file.
+// test file (Options resolves an env-name union to the matching
+// cel-go options), because a file that passes only because an
+// extension leaked into the default environment is not a passing
+// file. This is stricter than cel-go's own conformance runner, which
+// enables every extension globally.
 package oracle
 
 import (

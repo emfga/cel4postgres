@@ -53,6 +53,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      CEL_EXPR_DIR: /cel-expr
       DATABASE_URL: postgres://${POSTGRES_USER:-cel}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-cel}?sslmode=disable
       GOCACHE: /tmp/go-build
       GOFLAGS: -mod=mod
@@ -62,4 +63,8 @@ services:
       - test
     volumes:
       - ./:/src
+      # The conformance corpus, read-only, from the host's checkout
+      # directory (.env). An empty mount just makes the suite name
+      # CEL_EXPR_DIR as the fix.
+      - ${CEL_EXPR_DIR:-./.cel-expr}:/cel-expr:ro
     working_dir: /src

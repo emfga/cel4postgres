@@ -4,3 +4,6 @@
 # Planning workspaces are working memory, never a deliverable.
 # See CLAUDE.md -> Planning workspaces.
 .claude/workspace/
+
+# CI-only corpus checkout location
+.cel-expr/

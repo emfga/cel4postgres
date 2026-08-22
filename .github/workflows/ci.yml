@@ -56,7 +56,21 @@ jobs:
 
       - run: go vet ./...
 
+      # The conformance suite reads the cel-spec corpus from a local
+      # checkout named by CEL_EXPR_DIR. Pinned by commit for the same
+      # reason cel-go is pinned in go.mod: the corpus defines what the
+      # conformance number means, so it moves only deliberately.
+      # Checked out after the gofmt step so its files are never
+      # formatted-checked as ours.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: cel-expr/cel-spec
+          ref: ba58ae5007845f3a1279b488cdeb79645ce958bb
+          path: .cel-expr/cel-spec
+
       - run: go test ./... -v
+        env:
+          CEL_EXPR_DIR: ${{ github.workspace }}/.cel-expr
 
       - name: Dump database logs
         if: failure()
