@@ -80,3 +80,45 @@ func Eval(
 
 	return value, nil
 }
+
+// EvalPartial compiles and evaluates an expression under a partial
+// activation: every declared variable absent from known is treated as
+// unknown, and the program runs with partial evaluation enabled so
+// unknowns propagate instead of erroring. This is the reference for
+// the unknown-propagation suite (day-one invariant 4) -- the
+// conformance corpus's unknowns file is an empty stub, so agreement
+// with cel-go partial evaluation is the measure.
+func EvalPartial(
+	expression string,
+	known map[string]any,
+	options ...cel.EnvOption,
+) (ref.Val, error) {
+	env, err := Env(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	ast, issues := env.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return nil, fmt.Errorf("compile %q: %w", expression, issues.Err())
+	}
+
+	program, err := env.Program(ast, cel.EvalOptions(cel.OptPartialEval))
+	if err != nil {
+		return nil, fmt.Errorf("plan %q: %w", expression, err)
+	}
+
+	if known == nil {
+		known = map[string]any{}
+	}
+	vars, err := env.PartialVars(known)
+	if err != nil {
+		return nil, fmt.Errorf("partial activation %q: %w", expression, err)
+	}
+
+	value, _, err := program.Eval(vars)
+	if err != nil {
+		return nil, fmt.Errorf("evaluate %q: %w", expression, err)
+	}
+	return value, nil
+}

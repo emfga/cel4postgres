@@ -426,7 +426,20 @@ BEGIN
   SELECT * INTO s FROM cel._ck_assign1(mo, prev, cur);
   IF s.ok THEN
     mo := s.mo;
-    t := cel._ck_most_general(prev, cur);
+    -- Joining null with a nullable type keeps the nullable type:
+    -- the corpus's legacy_nullable_types section fixes this and
+    -- cel-go v0.32.0 skips those cases as known-wrong (its
+    -- mostGeneral would answer null) -- see the workspace
+    -- measurements log for the adjudication.
+    IF prev ->> 'kind' = 'null' AND cel._ck_nullable(cur)
+       AND cur ->> 'kind' <> 'null' THEN
+      t := cur;
+    ELSIF cur ->> 'kind' = 'null' AND cel._ck_nullable(prev)
+       AND prev ->> 'kind' <> 'null' THEN
+      t := prev;
+    ELSE
+      t := cel._ck_most_general(prev, cur);
+    END IF;
     RETURN;
   END IF;
   t := '{"kind":"dyn"}'::jsonb;
@@ -551,15 +564,27 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Registry rows first, then caller-declared overloads (options
+  -- 'decls' function entries, threaded in via st -> 'fns').
   FOR row_r IN
-    SELECT o.*
-    FROM cel.overload o
-    WHERE o.function = fn
-      AND EXISTS (
-        SELECT FROM cel.env_item it
-        WHERE it.env = ANY (envs) AND it.kind = 'overload'
-          AND it.ref = o.id)
-    ORDER BY o.ordinal
+    SELECT q.id, q.member, q.arg_types, q.result_type
+    FROM (
+      SELECT o.id, o.member, o.arg_types, o.result_type, o.ordinal
+      FROM cel.overload o
+      WHERE o.function = fn
+        AND EXISTS (
+          SELECT FROM cel.env_item it
+          WHERE it.env = ANY (envs) AND it.kind = 'overload'
+            AND it.ref = o.id)
+      UNION ALL
+      SELECT e ->> 'id',
+             coalesce((e ->> 'member')::boolean, false),
+             e -> 'arg_types', e -> 'result_type',
+             1000000 + (row_number() OVER ())::int
+      FROM jsonb_array_elements(
+        coalesce(st -> 'fns' -> fn, '[]'::jsonb)) e
+    ) q
+    ORDER BY q.ordinal
   LOOP
     CONTINUE WHEN row_r.member <> is_member;
 
@@ -854,7 +879,7 @@ BEGIN
       SELECT n.c INTO cand
       FROM unnest(cel._name_candidates(
         ltrim(fname, '.'), fname LIKE '.%', ctr)) n(c)
-      WHERE EXISTS (
+      WHERE sto -> 'fns' ? n.c OR EXISTS (
         SELECT FROM cel.overload o
         WHERE o.function = n.c AND EXISTS (
           SELECT FROM cel.env_item it
@@ -880,7 +905,7 @@ BEGIN
         FROM unnest(cel._name_candidates(
           array_to_string(chain.parts, '.') || '.' || fname,
           chain.absolute, ctr)) n(c)
-        WHERE EXISTS (
+        WHERE sto -> 'fns' ? n.c OR EXISTS (
           SELECT FROM cel.overload o
           WHERE o.function = n.c AND EXISTS (
             SELECT FROM cel.env_item it
@@ -904,7 +929,7 @@ BEGIN
         nodeo := jsonb_set(nodeo, '{target}', c.nodeo);
         target_t := c.typ;
 
-        IF NOT EXISTS (
+        IF NOT (sto -> 'fns' ? fname) AND NOT EXISTS (
           SELECT FROM cel.overload o
           WHERE o.function = fname AND EXISTS (
             SELECT FROM cel.env_item it
@@ -1174,6 +1199,7 @@ DECLARE
   ctr     text := coalesce(options ->> 'container', '');
   globals jsonb;
   st      jsonb;
+  fns     jsonb := '{}'::jsonb;
   c       record;
   types   jsonb := '{}'::jsonb;
   entry   record;
@@ -1216,12 +1242,20 @@ BEGIN
     SELECT globals || coalesce(jsonb_object_agg(
       d ->> 'name', d -> 'type'), '{}'::jsonb)
     INTO globals
-    FROM jsonb_array_elements(options -> 'decls') d;
+    FROM jsonb_array_elements(options -> 'decls') d
+    WHERE d ? 'type';
+    -- Function declarations become caller-scoped overloads,
+    -- threaded to _ck_resolve via the checker state.
+    SELECT coalesce(jsonb_object_agg(
+      d ->> 'name', d -> 'function' -> 'overloads'), '{}'::jsonb)
+    INTO fns
+    FROM jsonb_array_elements(options -> 'decls') d
+    WHERE d ? 'function';
   END IF;
 
   st := jsonb_build_object(
     'types', '{}'::jsonb, 'refs', '{}'::jsonb,
-    'map', '{}'::jsonb, 'n', 0);
+    'map', '{}'::jsonb, 'n', 0, 'fns', fns);
 
   SELECT * INTO c FROM cel._ck(
     ast -> 'expr', '[]'::jsonb, globals, envs, ctr, st);

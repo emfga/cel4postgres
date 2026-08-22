@@ -151,15 +151,47 @@ func FromType(t *expr.Type) (TypeJSON, error) {
 	return nil, fmt.Errorf("type with unsupported kind %T", t.GetTypeKind())
 }
 
-// FromDecl converts a type_env declaration to the {name, type} shape
-// cel.check's options parameter takes. Every corpus declaration is an
-// ident declaration (measured, workspace doc 01); a function decl here
-// means the corpus changed and the runner needs extending.
+// FromDecl converts a type_env declaration to the shape cel.check's
+// options parameter takes: {name, type} for ident declarations,
+// {name, function: {overloads: [...]}} for function declarations
+// (type_deduction's functions section uses the latter).
 func FromDecl(d *expr.Decl) (map[string]any, error) {
+	if fn := d.GetFunction(); fn != nil {
+		overloads := []any{}
+		for _, o := range fn.GetOverloads() {
+			argTypes := []any{}
+			for _, p := range o.GetParams() {
+				pt, err := FromType(p)
+				if err != nil {
+					return nil, fmt.Errorf(
+						"declaration %q: %w", d.GetName(), err,
+					)
+				}
+				argTypes = append(argTypes, pt)
+			}
+			resultType, err := FromType(o.GetResultType())
+			if err != nil {
+				return nil, fmt.Errorf(
+					"declaration %q: %w", d.GetName(), err,
+				)
+			}
+			overloads = append(overloads, map[string]any{
+				"id":          o.GetOverloadId(),
+				"member":      o.GetIsInstanceFunction(),
+				"arg_types":   argTypes,
+				"result_type": resultType,
+			})
+		}
+		return map[string]any{
+			"name":     d.GetName(),
+			"function": map[string]any{"overloads": overloads},
+		}, nil
+	}
+
 	ident := d.GetIdent()
 	if ident == nil {
 		return nil, fmt.Errorf(
-			"declaration %q is not an ident declaration", d.GetName(),
+			"declaration %q is neither ident nor function", d.GetName(),
 		)
 	}
 

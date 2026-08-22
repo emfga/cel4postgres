@@ -19,6 +19,10 @@ var fileEnvs = map[string]string{
 	"optionals":    "standard,optionals",
 	"macros2":      "standard,two_var_comprehensions",
 	"network_ext":  "standard,network",
+	// type_deduction's flexible_type_parameter_assignment and
+	// legacy_nullable_types sections deduce optional_type values;
+	// everything else in the file is standard.
+	"type_deduction": "standard,optionals",
 }
 
 // EnvFor returns the env parameter for a corpus file.
