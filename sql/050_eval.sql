@@ -226,6 +226,49 @@ BEGIN
 END;
 $$;
 
+-- Resolves a dotted name as a registered type identifier (-> a type
+-- value) or a registered enum constant (-> its tagged value, e.g.
+-- google.protobuf.NullValue.NULL_VALUE -> int 0, mirroring cel-go's
+-- Provider.FindIdent). NULL when the name is neither.
+CREATE OR REPLACE FUNCTION cel._type_or_enum(
+  name text, absolute boolean, envs text[], ctr text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  r jsonb;
+BEGIN
+  SELECT jsonb_build_object('@t', 'type', 'v', c) INTO r
+  FROM unnest(cel._name_candidates(name, absolute, ctr)) AS c
+  WHERE EXISTS (
+    SELECT FROM cel.type t
+    WHERE t.name = c AND EXISTS (
+      SELECT FROM cel.env_item i2
+      WHERE i2.env = ANY (envs) AND i2.kind = 'type'
+        AND i2.ref = t.name))
+  LIMIT 1;
+  IF r IS NOT NULL THEN
+    RETURN r;
+  END IF;
+  SELECT jsonb_build_object('@t', 'int', 'v', e.value::bigint)
+  INTO r
+  FROM unnest(cel._name_candidates(name, absolute, ctr)) AS c
+  JOIN cel.type t
+    ON t.kind ? 'enum' AND c LIKE t.name || '.%'
+  JOIN LATERAL jsonb_each_text(t.kind -> 'enum') e ON true
+  WHERE t.name || '.' || e.key = c
+    AND EXISTS (
+      SELECT FROM cel.env_item i2
+      WHERE i2.env = ANY (envs) AND i2.kind = 'type'
+        AND i2.ref = t.name)
+  LIMIT 1;
+  RETURN r;
+END;
+$$;
+
 -- Field selection on an already-evaluated value.
 CREATE OR REPLACE FUNCTION cel._sel_field(v jsonb, field text, nid bigint)
 RETURNS jsonb
@@ -299,19 +342,12 @@ BEGIN
     IF res.val IS NOT NULL THEN
       RETURN res.val;
     END IF;
-    -- Registered type names are identifiers of type type(T).
-    SELECT c INTO nm
-    FROM unnest(cel._name_candidates(
-      ltrim(node ->> 'name', '.'), chain.absolute, ctr)) AS c
-    WHERE EXISTS (
-      SELECT FROM cel.type t
-      WHERE t.name = c AND EXISTS (
-        SELECT FROM cel.env_item i2
-        WHERE i2.env = ANY (envs) AND i2.kind = 'type'
-          AND i2.ref = t.name))
-    LIMIT 1;
-    IF nm IS NOT NULL THEN
-      RETURN jsonb_build_object('@t', 'type', 'v', nm);
+    -- Registered type names are identifiers of type type(T); enum
+    -- constants resolve to their values.
+    v := cel._type_or_enum(
+      ltrim(node ->> 'name', '.'), chain.absolute, envs, ctr);
+    IF v IS NOT NULL THEN
+      RETURN v;
     END IF;
     RETURN cel._err(format('no such attribute: %s',
       ltrim(node ->> 'name', '.')), nid);
@@ -342,6 +378,15 @@ BEGIN
         FOR i IN res.used + 1 .. cardinality(chain.parts) LOOP
           v := cel._sel_field(v, chain.parts[i], nid);
         END LOOP;
+        RETURN v;
+      END IF;
+      -- A fully-qualified type name or enum constant written as a
+      -- select chain (unchecked ASTs only; the checker rewrites
+      -- these to qualified idents).
+      v := cel._type_or_enum(
+        array_to_string(chain.parts, '.'), chain.absolute, envs,
+        ctr);
+      IF v IS NOT NULL THEN
         RETURN v;
       END IF;
     END IF;

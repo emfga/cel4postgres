@@ -1200,6 +1200,18 @@ BEGIN
     WHERE it.env = ANY (envs) AND it.kind = 'type'
       AND it.ref = t.name);
 
+  -- Enum constants (kind->'enum') are int-typed idents under
+  -- '<type>.<name>', mirroring cel-go's Provider.FindIdent.
+  SELECT globals || coalesce(jsonb_object_agg(
+    t.name || '.' || e.key, '{"kind":"int"}'::jsonb), '{}'::jsonb)
+  INTO globals
+  FROM cel.type t
+  CROSS JOIN LATERAL jsonb_each(t.kind -> 'enum') e
+  WHERE t.kind ? 'enum' AND EXISTS (
+    SELECT FROM cel.env_item it
+    WHERE it.env = ANY (envs) AND it.kind = 'type'
+      AND it.ref = t.name);
+
   IF options ? 'decls' THEN
     SELECT globals || coalesce(jsonb_object_agg(
       d ->> 'name', d -> 'type'), '{}'::jsonb)
