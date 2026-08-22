@@ -234,9 +234,21 @@ func runCase(
 	if err != nil {
 		t.Fatalf("eval stage: %v", err)
 	}
+	// The container reaches eval too: unchecked evaluation resolves
+	// names at runtime (checked ASTs bind them at check time, where
+	// the same option arrives via checkOptions).
+	evalOptions := map[string]any{}
+	if tc.GetContainer() != "" {
+		evalOptions["container"] = tc.GetContainer()
+	}
+	evalOptionsJSON, err := json.Marshal(evalOptions)
+	if err != nil {
+		t.Fatalf("eval stage: %v", err)
+	}
 	var rawResult []byte
 	err = conn.QueryRow(ctx,
-		"SELECT cel.eval($1, $2, $3)", raw, activation, env,
+		"SELECT cel.eval($1, $2, $3, $4)",
+		raw, activation, env, evalOptionsJSON,
 	).Scan(&rawResult)
 	if err != nil {
 		t.Fatalf("eval stage: %v", err)

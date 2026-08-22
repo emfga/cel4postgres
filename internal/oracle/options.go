@@ -14,7 +14,16 @@ import (
 // syntax, which cel-go's conformance run enables for the whole corpus
 // and our standard env includes (workspace doc 01).
 var envOptions = map[string][]cel.EnvOption{
-	"standard": {cel.EnableIdentifierEscapeSyntax()},
+	// Cross-type numeric comparisons and error-on-bad-presence-test
+	// are cel-go options, but the conformance corpus requires both
+	// under its plain standard environment (cel-go's own harness
+	// enables them globally, conformance_test.go:82-97), so our
+	// standard env includes them and the oracle must match.
+	"standard": {
+		cel.EnableIdentifierEscapeSyntax(),
+		cel.CrossTypeNumericComparisons(true),
+		cel.EnableErrorOnBadPresenceTest(true),
+	},
 	"strings":  {ext.Strings()},
 	"math":     {ext.Math()},
 	"lists":    {ext.Lists()},
