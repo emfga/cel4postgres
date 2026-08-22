@@ -11,7 +11,7 @@ and no procedural language beyond `plpgsql`.
 
 **Status: scaffolding only.** What exists is the harness, not the
 evaluator: `compose.yaml` (a disposable Postgres that installs `sql/`
-during initdb), `sql/install.sql` (the `cel` schema, a `schema_version`
+during initdb), `sql/000_install.sql` (the `cel` schema, a `schema_version`
 table and `cel.version()` — nothing that evaluates anything), a Go suite
 whose only tests assert that the database is reachable and the schema
 installed, and a CI workflow that runs them.
@@ -213,10 +213,13 @@ is ambiguous, cel-go evaluating the same expression is the tiebreak — a
 claim about CEL semantics that has not been run against cel-go is a
 hypothesis.
 
-**Each file runs under the `env` its features require**, mirroring how
-cel-go's own `conformance/conformance_test.go` enables extensions
-selectively: `basic`/`comparisons`/`logic` under `standard`,
-`string_ext` under `standard + strings`, and so on. A file that passes
+**Each file runs under the `env` its features require**:
+`basic`/`comparisons`/`logic` under `standard`, `string_ext` under
+`standard + strings`, and so on. This is deliberately stricter than
+cel-go's own `conformance_test.go`, which (measured) builds one
+environment with every extension enabled globally — per-file envs are
+the property the registry design exists to prove, and the oracle is
+configured per-file the same way when used as tiebreak. A file that passes
 only because the default environment quietly gained an extension is not
 a passing file — that is the failure mode the env parameter exists to
 prevent.
@@ -300,7 +303,7 @@ burns an hour re-reading 3 000 assertions.
 
 Infrastructure failures must never reach the suite as test failures.
 `--wait` cannot return before the schema is in place, a failing
-`install.sql` aborts container startup rather than yielding a running
+`sql/` script aborts container startup rather than yielding a running
 database, and `internal/testdb` names the command that fixes an
 unreachable database instead of reporting a bare connection error — a
 red conformance run should never be ambiguous about which of the two
