@@ -467,3 +467,45 @@ END;
 $$;
 
 COMMIT;
+
+BEGIN;
+
+-- Exact float8 -> numeric. The built-in cast goes through the
+-- shortest decimal text, which identifies the double uniquely but is
+-- NOT its exact binary value (36028797018963968::float8::numeric
+-- ends in ...70). Halving until the value fits 2^53 and doubling
+-- until integral recovers mantissa and exponent exactly; both are
+-- exact float operations.
+CREATE OR REPLACE FUNCTION cel._f2n(f float8)
+RETURNS numeric
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  e int := 0;
+BEGIN
+  IF f = 0 THEN
+    RETURN 0;
+  END IF;
+  WHILE abs(f) >= 9007199254740992::float8 LOOP
+    f := f / 2;
+    e := e + 1;
+  END LOOP;
+  WHILE f <> trunc(f) LOOP
+    f := f * 2;
+    e := e - 1;
+  END LOOP;
+  -- 2^e must be exact.  numeric ^ is exact for non-negative integer
+  -- exponents but rounds to ~16 significant digits for negative ones,
+  -- so build 2^-k as 5^k * 10^-k: an exact integer power times an
+  -- exact decimal literal, combined by (always exact) multiplication.
+  IF e >= 0 THEN
+    RETURN f::bigint::numeric * (2::numeric ^ e);
+  END IF;
+  RETURN f::bigint::numeric * (5::numeric ^ (-e))
+         * ('1e' || e)::numeric;
+END;
+$$;
+
+COMMIT;

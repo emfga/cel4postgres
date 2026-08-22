@@ -258,8 +258,8 @@ BEGIN
       RETURN jsonb_build_object('@t', 'double', 'v',
         CASE WHEN neg THEN '-Infinity' ELSE 'Infinity' END);
     END IF;
-    na := fa::numeric;
-    nb := fb::numeric;
+    na := cel._f2n(fa);
+    nb := cel._f2n(fb);
     IF abs(na) >= boundary * abs(nb) THEN
       RETURN jsonb_build_object('@t', 'double', 'v',
         CASE WHEN (fa < 0) <> (fb < 0)
@@ -273,8 +273,8 @@ BEGIN
     RETURN cel._dbl_val(fa / fb);
   END IF;
 
-  na := fa::numeric;
-  nb := fb::numeric;
+  na := cel._f2n(fa);
+  nb := cel._f2n(fb);
   RETURN cel._dbl_of_numeric(CASE op
     WHEN '+' THEN na + nb
     WHEN '-' THEN na - nb
@@ -800,6 +800,486 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO cel.env_item (env, kind, ref)
 SELECT 'standard', 'type', name FROM cel.type
+ON CONFLICT DO NOTHING;
+
+COMMIT;
+
+BEGIN;
+
+-- Part 2: type conversions and string functions. Conversion
+-- semantics are cel-go's exactly (common/types + overflow.go,
+-- measured): double-to-int excludes both 2^63 boundaries, string
+-- parsing follows Go strconv, string(double) is the %g formatter.
+
+CREATE OR REPLACE FUNCTION cel._f_conv_identity(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT args[1];
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_int64_to_uint64(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._chk_uint((args[1] ->> 'v')::numeric);
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_uint64_to_int64(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._chk_int((args[1] ->> 'v')::numeric);
+$$;
+
+-- doubleToInt64Checked (overflow.go:302): NaN, infinities, and both
+-- 2^63 boundaries are overflow; conversion truncates toward zero.
+CREATE OR REPLACE FUNCTION cel._f_double_to_int64(args jsonb[])
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  f float8 := cel._dbl(args[1]);
+BEGIN
+  IF f = 'NaN'::float8 OR f = 'Infinity'::float8
+     OR f = '-Infinity'::float8
+     OR f <= (-9223372036854775808)::float8
+     OR f >= 9223372036854775807::float8
+  THEN
+    RETURN cel._err('integer overflow');
+  END IF;
+  RETURN cel._int_val(trunc(cel._f2n(f), 0));
+END;
+$$;
+
+-- doubleToUint64Checked (overflow.go:312).
+CREATE OR REPLACE FUNCTION cel._f_double_to_uint64(args jsonb[])
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  f float8 := cel._dbl(args[1]);
+BEGIN
+  IF f = 'NaN'::float8 OR f = 'Infinity'::float8
+     OR f = '-Infinity'::float8
+     OR f < 0
+     OR f >= 18446744073709551615::float8
+  THEN
+    RETURN cel._err('unsigned integer overflow');
+  END IF;
+  RETURN jsonb_build_object('@t', 'uint', 'v',
+    to_jsonb(trunc(cel._f2n(f), 0)));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_int64_to_double(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._dbl_val((args[1] ->> 'v')::numeric::float8);
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_uint64_to_double(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._dbl_val((args[1] ->> 'v')::numeric::float8);
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_string_to_int64(args jsonb[])
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  s text := args[1] ->> 'v';
+BEGIN
+  IF s !~ '^[-+]?[0-9]+$' THEN
+    RETURN cel._err(format(
+      'type conversion error from string to int: %s',
+      quote_literal(s)));
+  END IF;
+  RETURN cel._chk_int(s::numeric);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_string_to_uint64(args jsonb[])
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  s text := args[1] ->> 'v';
+BEGIN
+  -- Go's ParseUint permits no sign.
+  IF s !~ '^[0-9]+$' THEN
+    RETURN cel._err(format(
+      'type conversion error from string to uint: %s',
+      quote_literal(s)));
+  END IF;
+  RETURN cel._chk_uint(s::numeric);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_string_to_double(args jsonb[])
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  s text := args[1] ->> 'v';
+  l text := lower(s);
+  n numeric;
+BEGIN
+  -- Go ParseFloat accepts inf/infinity/nan, case-insensitive,
+  -- optionally signed.
+  IF l IN ('inf', '+inf', 'infinity', '+infinity') THEN
+    RETURN jsonb_build_object('@t', 'double', 'v', 'Infinity');
+  ELSIF l IN ('-inf', '-infinity') THEN
+    RETURN jsonb_build_object('@t', 'double', 'v', '-Infinity');
+  ELSIF l = 'nan' THEN
+    RETURN jsonb_build_object('@t', 'double', 'v', 'NaN');
+  END IF;
+  IF s !~ '^[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?$' THEN
+    RETURN cel._err(format(
+      'type conversion error from string to double: %s',
+      quote_literal(s)));
+  END IF;
+  n := s::numeric;
+  -- ParseFloat overflow is an error for conversions (unlike literal
+  -- underflow, which rounds to signed zero silently).
+  IF abs(n) > 1.7976931348623157e308::numeric THEN
+    RETURN cel._err(format(
+      'type conversion error from string to double: %s',
+      quote_literal(s)));
+  END IF;
+  IF n <> 0 AND abs(n) <= 2.4703282292062327e-324::numeric THEN
+    RETURN cel._dbl_val(
+      (CASE WHEN n < 0 THEN '-0' ELSE '0' END)::float8);
+  END IF;
+  RETURN cel._dbl_val(n::float8);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_string_to_bool(args jsonb[])
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  s text := args[1] ->> 'v';
+BEGIN
+  -- Go strconv.ParseBool's exact accepted set.
+  IF s IN ('1', 't', 'T', 'TRUE', 'true', 'True') THEN
+    RETURN cel._bool_val(true);
+  ELSIF s IN ('0', 'f', 'F', 'FALSE', 'false', 'False') THEN
+    RETURN cel._bool_val(false);
+  END IF;
+  RETURN cel._err(format(
+    'type conversion error from string to bool: %s',
+    quote_literal(s)));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_int64_to_string(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT jsonb_build_object('@t', 'string', 'v', args[1] ->> 'v');
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_uint64_to_string(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT jsonb_build_object('@t', 'string', 'v', args[1] ->> 'v');
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_double_to_string(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT jsonb_build_object('@t', 'string', 'v',
+    CASE args[1] ->> 'v'
+      WHEN 'Infinity'  THEN '+Inf'
+      WHEN '-Infinity' THEN '-Inf'
+      WHEN 'NaN'       THEN 'NaN'
+      ELSE cel._double_text(cel._dbl(args[1]))
+    END);
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_bool_to_string(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT jsonb_build_object('@t', 'string', 'v',
+    CASE WHEN (args[1] ->> 'v')::boolean THEN 'true' ELSE 'false' END);
+$$;
+
+-- UTF-8 validation for bytes->string, byte-DFA style, without an
+-- exception block (convert_from would raise). NUL is additionally
+-- unrepresentable in Postgres text.
+CREATE OR REPLACE FUNCTION cel._utf8_valid(b bytea)
+RETURNS boolean
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  i int := 0;
+  n int := octet_length(b);
+  c int;
+  need int;
+  j int;
+  cp int;
+  mins int[] := ARRAY[0, 128, 2048, 65536];
+BEGIN
+  WHILE i < n LOOP
+    c := get_byte(b, i);
+    IF c = 0 THEN
+      RETURN false;  -- representable in UTF-8, not in Postgres text
+    ELSIF c < 128 THEN
+      need := 0;
+      cp := c;
+    ELSIF c BETWEEN 194 AND 223 THEN
+      need := 1;
+      cp := c - 192;
+    ELSIF c BETWEEN 224 AND 239 THEN
+      need := 2;
+      cp := c - 224;
+    ELSIF c BETWEEN 240 AND 244 THEN
+      need := 3;
+      cp := c - 240;
+    ELSE
+      RETURN false;
+    END IF;
+    FOR j IN 1 .. need LOOP
+      IF i + j >= n OR get_byte(b, i + j) NOT BETWEEN 128 AND 191 THEN
+        RETURN false;
+      END IF;
+      cp := cp * 64 + (get_byte(b, i + j) - 128);
+    END LOOP;
+    IF need > 0 AND cp < mins[need + 1] THEN
+      RETURN false;  -- overlong encoding
+    END IF;
+    IF cp > 1114111 OR (cp BETWEEN 55296 AND 57343) THEN
+      RETURN false;
+    END IF;
+    i := i + need + 1;
+  END LOOP;
+  RETURN true;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_bytes_to_string(args jsonb[])
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  b bytea := decode(args[1] ->> 'v', 'base64');
+BEGIN
+  IF NOT cel._utf8_valid(b) THEN
+    RETURN cel._err(
+      'invalid UTF-8 in bytes, cannot convert to string');
+  END IF;
+  RETURN jsonb_build_object('@t', 'string', 'v',
+    convert_from(b, 'UTF8'));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_string_to_bytes(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT jsonb_build_object('@t', 'bytes', 'v',
+    replace(encode(convert_to(args[1] ->> 'v', 'UTF8'), 'base64'),
+      E'\n', ''));
+$$;
+
+-- String tests. matches() is Postgres ~ for this milestone
+-- (decision 9: all corpus patterns measured to agree with RE2).
+
+CREATE OR REPLACE FUNCTION cel._f_contains(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val(
+    position((args[2] ->> 'v') IN (args[1] ->> 'v')) > 0
+    OR args[2] ->> 'v' = '');
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_starts_with(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val(
+    left(args[1] ->> 'v', length(args[2] ->> 'v')) = args[2] ->> 'v');
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_ends_with(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val(
+    right(args[1] ->> 'v', length(args[2] ->> 'v')) = args[2] ->> 'v');
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_matches(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val((args[1] ->> 'v') ~ (args[2] ->> 'v'));
+$$;
+
+-- Registration.
+WITH t AS (
+  SELECT
+    '{"kind":"bool"}'::jsonb   AS bool,
+    '{"kind":"int"}'::jsonb    AS int,
+    '{"kind":"uint"}'::jsonb   AS uint,
+    '{"kind":"double"}'::jsonb AS dbl,
+    '{"kind":"string"}'::jsonb AS str,
+    '{"kind":"bytes"}'::jsonb  AS byt
+)
+INSERT INTO cel.overload
+  (id, function, member, arg_types, result_type, impl, ordinal)
+SELECT * FROM (
+  SELECT 'int64_to_int64', 'int', false,
+    jsonb_build_array(t.int), t.int,
+    'cel._f_conv_identity(jsonb[])'::regprocedure, 10 FROM t
+  UNION ALL SELECT 'uint64_to_int64', 'int', false,
+    jsonb_build_array(t.uint), t.int,
+    'cel._f_uint64_to_int64(jsonb[])', 20 FROM t
+  UNION ALL SELECT 'double_to_int64', 'int', false,
+    jsonb_build_array(t.dbl), t.int,
+    'cel._f_double_to_int64(jsonb[])', 30 FROM t
+  UNION ALL SELECT 'string_to_int64', 'int', false,
+    jsonb_build_array(t.str), t.int,
+    'cel._f_string_to_int64(jsonb[])', 40 FROM t
+
+  UNION ALL SELECT 'uint64_to_uint64', 'uint', false,
+    jsonb_build_array(t.uint), t.uint,
+    'cel._f_conv_identity(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'int64_to_uint64', 'uint', false,
+    jsonb_build_array(t.int), t.uint,
+    'cel._f_int64_to_uint64(jsonb[])', 20 FROM t
+  UNION ALL SELECT 'double_to_uint64', 'uint', false,
+    jsonb_build_array(t.dbl), t.uint,
+    'cel._f_double_to_uint64(jsonb[])', 30 FROM t
+  UNION ALL SELECT 'string_to_uint64', 'uint', false,
+    jsonb_build_array(t.str), t.uint,
+    'cel._f_string_to_uint64(jsonb[])', 40 FROM t
+
+  UNION ALL SELECT 'double_to_double', 'double', false,
+    jsonb_build_array(t.dbl), t.dbl,
+    'cel._f_conv_identity(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'int64_to_double', 'double', false,
+    jsonb_build_array(t.int), t.dbl,
+    'cel._f_int64_to_double(jsonb[])', 20 FROM t
+  UNION ALL SELECT 'uint64_to_double', 'double', false,
+    jsonb_build_array(t.uint), t.dbl,
+    'cel._f_uint64_to_double(jsonb[])', 30 FROM t
+  UNION ALL SELECT 'string_to_double', 'double', false,
+    jsonb_build_array(t.str), t.dbl,
+    'cel._f_string_to_double(jsonb[])', 40 FROM t
+
+  UNION ALL SELECT 'string_to_string', 'string', false,
+    jsonb_build_array(t.str), t.str,
+    'cel._f_conv_identity(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'int64_to_string', 'string', false,
+    jsonb_build_array(t.int), t.str,
+    'cel._f_int64_to_string(jsonb[])', 20 FROM t
+  UNION ALL SELECT 'uint64_to_string', 'string', false,
+    jsonb_build_array(t.uint), t.str,
+    'cel._f_uint64_to_string(jsonb[])', 30 FROM t
+  UNION ALL SELECT 'double_to_string', 'string', false,
+    jsonb_build_array(t.dbl), t.str,
+    'cel._f_double_to_string(jsonb[])', 40 FROM t
+  UNION ALL SELECT 'bool_to_string', 'string', false,
+    jsonb_build_array(t.bool), t.str,
+    'cel._f_bool_to_string(jsonb[])', 50 FROM t
+  UNION ALL SELECT 'bytes_to_string', 'string', false,
+    jsonb_build_array(t.byt), t.str,
+    'cel._f_bytes_to_string(jsonb[])', 60 FROM t
+
+  UNION ALL SELECT 'bool_to_bool', 'bool', false,
+    jsonb_build_array(t.bool), t.bool,
+    'cel._f_conv_identity(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'string_to_bool', 'bool', false,
+    jsonb_build_array(t.str), t.bool,
+    'cel._f_string_to_bool(jsonb[])', 20 FROM t
+
+  UNION ALL SELECT 'bytes_to_bytes', 'bytes', false,
+    jsonb_build_array(t.byt), t.byt,
+    'cel._f_conv_identity(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'string_to_bytes', 'bytes', false,
+    jsonb_build_array(t.str), t.byt,
+    'cel._f_string_to_bytes(jsonb[])', 20 FROM t
+
+  UNION ALL SELECT 'contains_string', 'contains', true,
+    jsonb_build_array(t.str, t.str), t.bool,
+    'cel._f_contains(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'starts_with_string', 'startsWith', true,
+    jsonb_build_array(t.str, t.str), t.bool,
+    'cel._f_starts_with(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'ends_with_string', 'endsWith', true,
+    jsonb_build_array(t.str, t.str), t.bool,
+    'cel._f_ends_with(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'matches_string', 'matches', true,
+    jsonb_build_array(t.str, t.str), t.bool,
+    'cel._f_matches(jsonb[])', 10 FROM t
+  UNION ALL SELECT 'matches', 'matches', false,
+    jsonb_build_array(t.str, t.str), t.bool,
+    'cel._f_matches(jsonb[])', 10 FROM t
+) rows(id, fn, member, arg_types, result_type, impl, ordinal)
+ON CONFLICT (id) DO UPDATE SET
+  function = excluded.function,
+  member = excluded.member,
+  arg_types = excluded.arg_types,
+  result_type = excluded.result_type,
+  impl = excluded.impl,
+  ordinal = excluded.ordinal;
+
+INSERT INTO cel.env_item (env, kind, ref)
+SELECT 'standard', 'overload', id FROM cel.overload
 ON CONFLICT DO NOTHING;
 
 COMMIT;

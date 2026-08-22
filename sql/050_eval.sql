@@ -204,7 +204,13 @@ DECLARE
   cand  text;
   name  text;
 BEGIN
-  FOR f IN REVERSE jsonb_array_length(scopes) - 1 .. 0 LOOP
+  -- A leading dot pins the name to the input activation: cel-go's
+  -- absoluteAttribute unwraps every comprehension frame before
+  -- resolving when the checker marked the name for disambiguation
+  -- (attributes.go, disambiguateNames).
+  FOR f IN REVERSE CASE WHEN absolute THEN 0
+                        ELSE jsonb_array_length(scopes) - 1 END .. 0
+  LOOP
     FOR plen IN REVERSE cardinality(parts) .. 1 LOOP
       name := array_to_string(parts[1:plen], '.');
       FOREACH cand IN ARRAY cel._name_candidates(name, absolute, ctr)
@@ -691,7 +697,12 @@ BEGIN
     ast -> 'expr',
     jsonb_build_array(coalesce(activation, '{}'::jsonb)),
     envs,
-    coalesce(options ->> 'container', ''),
+    -- A checked AST already carries fully-qualified names; applying
+    -- the container again would mis-resolve deliberately-bare names
+    -- (the corpus disambiguation cases: a checked ident "y" must not
+    -- become "com.example.y" at runtime).
+    CASE WHEN ast ? 'types' THEN ''
+         ELSE coalesce(options ->> 'container', '') END,
     0);
 END;
 $$;
