@@ -12,9 +12,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
+	expr "cel.dev/expr"
 	test "cel.dev/expr/conformance/test"
 	"google.golang.org/protobuf/encoding/prototext"
 
@@ -115,4 +117,42 @@ var descriptorDependent = regexp.MustCompile(
 // from the corpus.
 func DescriptorDependent(t *test.SimpleTest) bool {
 	return descriptorDependent.MatchString(prototext.Format(t))
+}
+
+// ContainsNulString reports whether the case's expected value or
+// bindings carry a string (not bytes) containing NUL. PostgreSQL text
+// and jsonb strings categorically cannot represent U+0000, so these
+// cases are skipped by name -- a substrate limitation, not a CEL one.
+// A raw-string literal like r'\000' is unaffected: its value holds
+// the backslash characters, not a NUL.
+func ContainsNulString(t *test.SimpleTest) bool {
+	for _, binding := range t.GetBindings() {
+		if exprValueHasNul(binding) {
+			return true
+		}
+	}
+	return valueHasNul(t.GetValue()) ||
+		valueHasNul(t.GetTypedResult().GetResult())
+}
+
+func exprValueHasNul(v *expr.ExprValue) bool {
+	return valueHasNul(v.GetValue())
+}
+
+func valueHasNul(v *expr.Value) bool {
+	if v == nil {
+		return false
+	}
+	if strings.ContainsRune(v.GetStringValue(), 0) {
+		return true
+	}
+	if slices.ContainsFunc(v.GetListValue().GetValues(), valueHasNul) {
+		return true
+	}
+	for _, e := range v.GetMapValue().GetEntries() {
+		if valueHasNul(e.GetKey()) || valueHasNul(e.GetValue()) {
+			return true
+		}
+	}
+	return false
 }

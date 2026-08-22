@@ -56,10 +56,14 @@ func GenerateSkippedCases() (map[string]string, error) {
 		}
 		for _, section := range parsed.GetSection() {
 			for _, test := range section.GetTest() {
-				if corpus.DescriptorDependent(test) {
-					key := file + "/" + section.GetName() +
-						"/" + test.GetName()
+				key := file + "/" + section.GetName() +
+					"/" + test.GetName()
+				switch {
+				case corpus.DescriptorDependent(test):
 					skipped[key] = "requires protobuf descriptors"
+				case corpus.ContainsNulString(test):
+					skipped[key] =
+						"PostgreSQL text cannot represent NUL in strings"
 				}
 			}
 		}
