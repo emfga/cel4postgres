@@ -9,12 +9,19 @@ Common Expression Language (CEL). It parses, type-checks and evaluates
 CEL inside PostgreSQL, with no server-side extension, no shared library,
 and no procedural language beyond `plpgsql`.
 
-**Status: greenfield.** At the time this file was written the repository
-contains a `README.md` and this file. Everything below the *Decisions*
-section describes the design the first commits are meant to realise, not
-code that exists. When you implement a piece of it, replace the
-prescriptive wording here with what the code actually does — and when the
-code and this file disagree, the code is right and this file is a bug.
+**Status: scaffolding only.** What exists is the harness, not the
+evaluator: `compose.yaml` (a disposable Postgres that installs `sql/`
+during initdb), `sql/install.sql` (the `cel` schema, a `schema_version`
+table and `cel.version()` — nothing that evaluates anything), a Go suite
+whose only tests assert that the database is reachable and the schema
+installed, and a CI workflow that runs them.
+
+No parser, checker, evaluator, registry table or conformance runner has
+been written. Everything about those in the sections below describes the
+design the next commits are meant to realise, not code you can read.
+When you implement a piece of it, replace the prescriptive wording here
+with what the code actually does — and when the code and this file
+disagree, the code is right and this file is a bug.
 
 "Zero-dependency" is the product claim and the design constraint: a
 consumer installs cel4postgres by running SQL scripts against a database
@@ -232,28 +239,72 @@ cel-go's behaviour looks like an implementation detail rather than a
 specified one: two independent implementations agreeing is evidence about
 the spec; one is evidence about that implementation.
 
+**cel-go is pinned exactly in `go.mod` and stays exactly pinned**
+(`cel.dev/cel-go v0.32.0`). The set of expressions the two
+implementations agree on moves with the version, so an upgrade is a
+deliberate change with a re-measurement behind it, never a routine bump
+or a transitive one. `internal/oracle.Version` restates the pin and a
+test fails when the two drift apart — bump both together or not at all.
+
+`internal/oracle` is the only place that builds a cel-go environment.
+A comparison is meaningful only if the reference side is configured
+identically for every case, and an env assembled ad hoc per call site is
+how two different references get measured as one. Keep cel-go out of the
+rest of the tree: if it reaches a general utility layer, the reference
+implementation starts shaping how the evaluator is written, and the two
+stop being independent.
+
 ## Dev commands
 
-Go 1.26 and PostgreSQL 18 are on this machine; Docker is available for
-throwaway instances.
+Everything runs through compose. The database is disposable by
+construction: `PGDATA` is a tmpfs, so the data directory is empty on
+every start, the image re-runs `sql/` from
+`/docker-entrypoint-initdb.d`, and `docker compose down` discards the
+lot. Installing the schema is part of bringing the database up — there
+is no second step to forget, no volume to remember to delete, and no way
+for a stale schema to survive into a run.
 
 ```bash
-# a scratch database to iterate against
-docker run --rm -d --name celpg -e POSTGRES_PASSWORD=x -p 5432:5432 \
-  postgres:18-alpine
+# .env is optional -- every variable has a compose default. Copy
+# .env.example only to change one, most often POSTGRES_PORT.
 
-# install / reinstall the schema
-psql -f sql/install.sql "$DATABASE_URL"
+# --wait returns only once the database is up AND installed: the
+# healthcheck selects cel.version(), not just pg_isready. A one-shot
+# service would not work here -- `--wait` waits for running-or-healthy
+# and treats a container that exited 0 as a failure.
+docker compose up -d --wait
 
-# conformance: whole suite, then one file, then one case
-go test ./conformance/...
+# the suite, from the host
+go test ./...
 go test ./conformance/... -run TestSimple/basic
 go test ./conformance/... -run TestSimple/basic/self_eval_int_zero
+
+# the suite, in a container, with no Go toolchain on the host
+docker compose run --rm test
+
+docker compose down          # discards the database
 ```
+
+`POSTGRES_PORT` in `.env` sets only the host-side mapping, so the test
+database never collides with a Postgres already running on the machine.
+The container side is always 5432. **The connection string is derived
+from the `POSTGRES_*` variables, never stored beside them** — a second
+copy in a `DATABASE_URL` is how a changed port silently stops applying
+to half the tooling. Setting `DATABASE_URL` in the environment
+overrides the lot, which is how the containerised `test` service
+reaches `postgres` on the compose network.
 
 Keep a single-file and single-case selector working from the first
 harness commit. Iterating on a parser without one is how a session
 burns an hour re-reading 3 000 assertions.
+
+Infrastructure failures must never reach the suite as test failures.
+`--wait` cannot return before the schema is in place, a failing
+`install.sql` aborts container startup rather than yielding a running
+database, and `internal/testdb` names the command that fixes an
+unreachable database instead of reporting a bare connection error — a
+red conformance run should never be ambiguous about which of the two
+broke.
 
 ## Git
 
