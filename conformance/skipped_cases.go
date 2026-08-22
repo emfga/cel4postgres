@@ -7,6 +7,7 @@
 package conformance
 
 var skippedCases = map[string]string{
+	"comparisons/bound/bytes_gt_left_false":                                                             "PostgreSQL text cannot represent NUL in strings",
 	"comparisons/eq_literal/not_eq_dyn_proto2_msg_null":                                                 "requires protobuf descriptors",
 	"comparisons/eq_literal/not_eq_dyn_proto3_msg_null":                                                 "requires protobuf descriptors",
 	"comparisons/eq_wrapper/eq_bool_proto2_null":                                                        "requires protobuf descriptors",
@@ -41,6 +42,14 @@ var skippedCases = map[string]string{
 	"comparisons/eq_wrapper/eq_uint32_proto3_null":                                                      "requires protobuf descriptors",
 	"comparisons/eq_wrapper/eq_uint64_proto2_null":                                                      "requires protobuf descriptors",
 	"comparisons/eq_wrapper/eq_uint64_proto3_null":                                                      "requires protobuf descriptors",
+	"comparisons/gt_literal/gt_bytes_one":                                                               "PostgreSQL text cannot represent NUL in strings",
+	"comparisons/gt_literal/gt_bytes_one_to_empty":                                                      "PostgreSQL text cannot represent NUL in strings",
+	"comparisons/gt_literal/not_gt_bytes_sorting":                                                       "PostgreSQL text cannot represent NUL in strings",
+	"comparisons/gte_literal/gte_bytes_samelength":                                                      "PostgreSQL text cannot represent NUL in strings",
+	"comparisons/gte_literal/gte_bytes_to_empty":                                                        "PostgreSQL text cannot represent NUL in strings",
+	"comparisons/gte_literal/not_gte_bytes_empty_to_nonempty":                                           "PostgreSQL text cannot represent NUL in strings",
+	"comparisons/lte_literal/lte_bytes_empty":                                                           "PostgreSQL text cannot represent NUL in strings",
+	"comparisons/lte_literal/not_lte_bytes_length":                                                      "PostgreSQL text cannot represent NUL in strings",
 	"comparisons/ne_literal/ne_proto2":                                                                  "requires protobuf descriptors",
 	"comparisons/ne_literal/ne_proto2_any_unpack":                                                       "requires protobuf descriptors",
 	"comparisons/ne_literal/ne_proto2_any_unpack_bytewise_fallback":                                     "requires protobuf descriptors",

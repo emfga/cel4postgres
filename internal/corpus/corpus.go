@@ -126,6 +126,12 @@ func DescriptorDependent(t *test.SimpleTest) bool {
 // A raw-string literal like r'\000' is unaffected: its value holds
 // the backslash characters, not a NUL.
 func ContainsNulString(t *test.SimpleTest) bool {
+	// Some comparison cases carry raw NUL bytes inside the expression
+	// text itself (bytes literals written verbatim in the textproto);
+	// those cannot even be sent to Postgres as a text parameter.
+	if strings.ContainsRune(t.GetExpr(), 0) {
+		return true
+	}
 	for _, binding := range t.GetBindings() {
 		if exprValueHasNul(binding) {
 			return true

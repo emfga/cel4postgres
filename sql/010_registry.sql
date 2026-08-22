@@ -167,4 +167,20 @@ INSERT INTO cel.env (name, flags)
 VALUES ('standard', '{"ident_escape": true}')
 ON CONFLICT (name) DO NOTHING;
 
+-- Extension environments. The rows exist from day one so an env
+-- union like 'standard,strings' resolves before the extension's own
+-- install script has seeded any items into them; the scripts under
+-- sql/ext/ fill them in later phases. optionals owns the
+-- optional-syntax parse flag.
+INSERT INTO cel.env (name, flags) VALUES
+  ('strings', '{}'),
+  ('math', '{}'),
+  ('lists', '{}'),
+  ('encoders', '{}'),
+  ('bindings', '{}'),
+  ('two_var_comprehensions', '{}'),
+  ('optionals', '{"optional_syntax": true}'),
+  ('network', '{}')
+ON CONFLICT (name) DO NOTHING;
+
 COMMIT;
