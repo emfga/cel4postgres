@@ -102,11 +102,13 @@ Both paths run the same tests against the same database.
 
 ## Installing into your own database
 
-`sql/install.sql` is an ordinary, idempotent SQL script. Nothing about
-it is specific to the compose setup:
+The `sql/` scripts are ordinary, idempotent SQL, ordered by their
+numeric prefix. Nothing about them is specific to the compose setup:
 
 ```bash
-psql -v ON_ERROR_STOP=1 -f sql/install.sql "$YOUR_DATABASE_URL"
+for f in sql/*.sql; do
+  psql -v ON_ERROR_STOP=1 -f "$f" "$YOUR_DATABASE_URL"
+done
 ```
 
 It needs a role that may create the `cel` schema. It does not need
