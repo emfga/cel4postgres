@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Mirrors the compose defaults. The harness reads .env when it
+    # exists and the process environment otherwise, so CI needs no
+    # file -- but it does need these, or the DSN cannot be built.
+    env:
+      POSTGRES_DB: cel
+      POSTGRES_HOST: localhost
+      POSTGRES_PASSWORD: password
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: cel
+
+    steps:
+      - uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The schema installs during initdb and the healthcheck selects
+      # cel.version(), so --wait returns only once the database is up
+      # AND installed. A broken install.sql fails this step rather
+      # than reaching the suite as a mysterious test failure.
+      - run: docker compose up -d --wait
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "gofmt needed:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - run: go vet ./...
+
+      - run: go test ./... -v
+
+      - name: Dump database logs
+        if: failure()
+        run: docker compose logs --no-color
