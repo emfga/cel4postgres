@@ -9,21 +9,22 @@ Common Expression Language (CEL). It parses, type-checks and evaluates
 CEL inside PostgreSQL, with no server-side extension, no shared library,
 and no procedural language beyond `plpgsql`.
 
-**Status: core pipeline working, well-known types pending.** The
-registry tables (`sql/010_registry.sql`), value representation and
-comparison (`020_values.sql`), parser and macro engine
-(`030_parse.sql`), type checker (`040_check.sql`), evaluator
-(`050_eval.sql`) and standard library (`060_stdlib.sql`) exist and
-run the conformance corpus: the core-language files (basic,
-comparisons, conversions, logic, integer/fp math, lists, string,
-macros, fields, namespace, plumbing, parse) pass except for cases
-needing the well-known types. Timestamps/durations, the WKT
-wrappers, `Struct`/`Value`/`Any`, unknowns, and every extension
-library are still unwritten; sections below describing those are
-design, not code. When you implement a piece, replace the
-prescriptive wording with what the code actually does — and when the
-code and this file disagree, the code is right and this file is a
-bug.
+**Status: the evaluator is complete and the in-scope conformance
+corpus is green.** The pipeline is `sql/010_registry.sql` (the four
+registry tables), `020_values.sql` (tagged values, equality,
+comparison), `030_parse.sql` (lexer, Pratt parser, macro engine),
+`040_check.sql` (checker with overload-id binding), `050_eval.sql`
+(evaluator core and the public `eval`/`evaluate` entry points),
+`060_stdlib.sql` (standard library rows and impls), `070_wkt.sql`
+(timestamps, durations, wrappers, Struct/Value/ListValue), and the
+extension libraries `100`–`170` (two-var comprehensions, optionals,
+strings, math, lists, encoders, bindings, network), each visible
+only under its own env name. Every in-scope conformance file passes
+on a fresh install; skips are a named list the suite prints (proto
+descriptor material and NUL-in-string cases). Unknown propagation
+is covered by its own suite against cel-go partial evaluation.
+When the code and this file disagree, the code is right and this
+file is a bug.
 
 "Zero-dependency" is the product claim and the design constraint: a
 consumer installs cel4postgres by running SQL scripts against a database
