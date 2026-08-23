@@ -829,4 +829,32 @@ AS $$
   SELECT cel.eval(ast, activation, env, '{}'::jsonb);
 $$;
 
+-- The one-shot composition: parse, check, eval. A parse or check
+-- rejection comes back as a CEL error value carrying the first
+-- message, so callers see one result type; callers that need the
+-- distinct stages (or memoization) use them directly.
+CREATE OR REPLACE FUNCTION cel.evaluate(
+  source text,
+  activation jsonb,
+  env text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  ast jsonb := cel.parse(source, env);
+BEGIN
+  IF ast ? 'errors' THEN
+    RETURN cel._err(ast -> 'errors' -> 0 ->> 'msg');
+  END IF;
+  ast := cel.check(ast, env);
+  IF ast ? 'errors' THEN
+    RETURN cel._err(ast -> 'errors' -> 0 ->> 'msg');
+  END IF;
+  RETURN cel.eval(ast, activation, env);
+END;
+$$;
+
 COMMIT;
