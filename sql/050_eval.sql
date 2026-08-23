@@ -290,6 +290,28 @@ BEGIN
     END IF;
     RETURN r;
   END IF;
+  -- Selection distributes over optional values (cel-go optional
+  -- qualifiers): none stays none, a present value is selected
+  -- strictly and re-wrapped.
+  IF v ->> '@t' = 'opaque' AND v ->> 'type' = 'optional_type' THEN
+    IF NOT (v -> 'v' ->> 'p')::boolean THEN
+      RETURN v;
+    END IF;
+    -- If-present semantics: a missing field yields none.
+    IF v -> 'v' -> 'v' ->> '@t' = 'map' THEN
+      r := cel._map_find(v -> 'v' -> 'v',
+        jsonb_build_object('@t', 'string', 'v', field));
+      IF r IS NULL THEN
+        RETURN cel._opt_none();
+      END IF;
+      RETURN cel._opt_of(r);
+    END IF;
+    r := cel._sel_field(v -> 'v' -> 'v', field, nid);
+    IF cel._is_error(r) OR cel._is_unknown(r) THEN
+      RETURN r;
+    END IF;
+    RETURN cel._opt_of(r);
+  END IF;
   RETURN cel._err(format(
     'does not support field selection: %s', v ->> '@t'), nid);
 END;
@@ -359,6 +381,13 @@ BEGIN
       v := cel._ev(node -> 'op', scopes, envs, ctr, d + 1);
       IF cel._is_error(v) OR cel._is_unknown(v) THEN
         RETURN v;
+      END IF;
+      IF v ->> '@t' = 'opaque' AND v ->> 'type' = 'optional_type'
+      THEN
+        IF NOT (v -> 'v' ->> 'p')::boolean THEN
+          RETURN cel._bool_val(false);
+        END IF;
+        v := v -> 'v' -> 'v';
       END IF;
       IF v ->> '@t' = 'map' THEN
         RETURN cel._bool_val(cel._map_find(v, key) IS NOT NULL);
@@ -496,6 +525,11 @@ BEGIN
         RETURN cel._f_index_list(ARRAY[l, r]);
       ELSIF l ->> '@t' = 'map' THEN
         RETURN cel._f_index_map(ARRAY[l, r]);
+      ELSIF l ->> '@t' = 'opaque' THEN
+        -- An extension index overload (e.g. the optionals rows) may
+        -- accept the opaque; fall through to normal dispatch.
+        RETURN cel._ev_dispatch(fn, node ? 'target',
+          ARRAY[l, r], node -> 'ref', envs, nid);
       END IF;
       RETURN cel._err('no such overload', nid);
     END IF;
@@ -539,6 +573,17 @@ BEGIN
         unk := CASE WHEN unk IS NULL THEN v
                     ELSE cel._unknown_merge(unk, v) END;
       END IF;
+      -- [?x] elements splice: none disappears, of(v) inlines
+      -- (optionals extension list-literal support).
+      IF node -> 'opt' @> to_jsonb(i) THEN
+        IF v ->> '@t' = 'opaque' AND v ->> 'type' = 'optional_type'
+        THEN
+          IF NOT (v -> 'v' ->> 'p')::boolean THEN
+            CONTINUE;
+          END IF;
+          v := v -> 'v' -> 'v';
+        END IF;
+      END IF;
       elems := elems || jsonb_build_array(v);
     END LOOP;
     IF unk IS NOT NULL THEN
@@ -565,6 +610,17 @@ BEGIN
                     ELSE cel._unknown_merge(unk, v) END;
       END IF;
       IF unk IS NULL THEN
+        -- {?k: v} entries splice: a none value drops the entry, a
+        -- present one inlines (optionals extension).
+        IF coalesce((node -> 'entries' -> i -> 'opt')::boolean,
+                    false)
+           AND v ->> '@t' = 'opaque'
+           AND v ->> 'type' = 'optional_type' THEN
+          IF NOT (v -> 'v' ->> 'p')::boolean THEN
+            CONTINUE;
+          END IF;
+          v := v -> 'v' -> 'v';
+        END IF;
         -- Key type restriction and duplicate rejection are dynamic
         -- (corpus-first rulings: forbidden double/null keys and
         -- normalized duplicates both error at construction).
@@ -613,6 +669,14 @@ BEGIN
       IF cel._is_unknown(v) THEN
         unk := CASE WHEN unk IS NULL THEN v
                     ELSE cel._unknown_merge(unk, v) END;
+      END IF;
+      IF coalesce((node -> 'fields' -> i -> 'opt')::boolean, false)
+         AND v ->> '@t' = 'opaque'
+         AND v ->> 'type' = 'optional_type' THEN
+        IF NOT (v -> 'v' ->> 'p')::boolean THEN
+          CONTINUE;
+        END IF;
+        v := v -> 'v' -> 'v';
       END IF;
       entries := entries || jsonb_build_object(
         node -> 'fields' -> i ->> 'name', v);

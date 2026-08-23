@@ -631,6 +631,49 @@ BEGIN
 END;
 $$;
 
+
+-- Field-selection result typing (checker.go:215 checkSelectField):
+-- shared by the select branch and the _?._ optional-select call.
+-- Unwraps an optional_type operand and reports it via was_opt.
+CREATE OR REPLACE FUNCTION cel._ck_sel_type(
+  op_t jsonb, st jsonb,
+  OUT typ jsonb, OUT sto jsonb, OUT err text, OUT was_opt boolean
+)
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  s record;
+BEGIN
+  sto := st;
+  was_opt := op_t ->> 'kind' = 'opaque'
+         AND op_t ->> 'name' = 'optional_type';
+  IF was_opt THEN
+    op_t := cel._ck_subst(sto -> 'map', op_t -> 'params' -> 0,
+      false);
+  END IF;
+  CASE op_t ->> 'kind'
+    WHEN 'map' THEN
+      typ := op_t -> 'params' -> 1;
+    WHEN 'param' THEN
+      SELECT * INTO s FROM cel._ck_assign1(
+        sto -> 'map', '{"kind":"dyn"}', op_t);
+      IF s.ok THEN
+        sto := jsonb_set(sto, '{map}', s.mo);
+      END IF;
+      typ := '{"kind":"dyn"}'::jsonb;
+    WHEN 'dyn', 'any', 'error' THEN
+      typ := '{"kind":"dyn"}'::jsonb;
+    WHEN 'wrapper' THEN
+      typ := '{"kind":"dyn"}'::jsonb;
+    ELSE
+      err := format('type %s does not support field selection',
+        quote_literal(cel._t_fmt(op_t)));
+  END CASE;
+END;
+$$;
+
 -- Local (comprehension) scope lookup, innermost first.
 CREATE OR REPLACE FUNCTION cel._ck_local(scopes jsonb, name text)
 RETURNS jsonb
@@ -752,6 +795,7 @@ STABLE PARALLEL SAFE
 SET search_path = cel, pg_temp
 AS $$
 DECLARE
+  selr record;
   k     text := node ->> 'k';
   nid   text := node ->> 'id';
   c     record;
@@ -828,30 +872,25 @@ BEGIN
     nodeo := jsonb_set(node, '{op}', c.nodeo);
     op_t := cel._ck_subst(sto -> 'map', c.typ, false);
 
-    CASE op_t ->> 'kind'
-      WHEN 'map' THEN
-        typ := op_t -> 'params' -> 1;
-      WHEN 'param' THEN
-        SELECT * INTO s FROM cel._ck_assign1(
-          sto -> 'map', '{"kind":"dyn"}', op_t);
-        IF s.ok THEN
-          sto := jsonb_set(sto, '{map}', s.mo);
-        END IF;
-        typ := '{"kind":"dyn"}'::jsonb;
-      WHEN 'dyn', 'any', 'error' THEN
-        typ := '{"kind":"dyn"}'::jsonb;
-      WHEN 'wrapper' THEN
-        typ := '{"kind":"dyn"}'::jsonb;
-      ELSE
-        err := format('type %s does not support field selection',
-          quote_literal(cel._t_fmt(op_t)));
-        RETURN;
-    END CASE;
+    SELECT * INTO selr FROM cel._ck_sel_type(op_t, sto);
+    IF selr.err IS NOT NULL THEN
+      err := selr.err;
+      RETURN;
+    END IF;
+    sto := selr.sto;
+    typ := selr.typ;
 
     IF coalesce((node -> 'test')::boolean, false) THEN
       typ := '{"kind":"bool"}'::jsonb;
     ELSE
       typ := cel._ck_subst(sto -> 'map', typ, false);
+      -- An optional operand makes the selection optional too
+      -- (checker.go:253).
+      IF selr.was_opt THEN
+        typ := jsonb_build_object('kind', 'opaque',
+          'name', 'optional_type',
+          'params', jsonb_build_array(typ));
+      END IF;
     END IF;
 
   WHEN 'call' THEN
@@ -872,6 +911,29 @@ BEGIN
     nodeo := jsonb_set(node, '{args}', newargs);
 
     fname := node ->> 'fn';
+
+    -- The optional-select operator is typed by field-selection
+    -- logic, not overload resolution (checker.go:187
+    -- checkOptSelect); its reference is the fixed function id.
+    IF NOT node ? 'target' AND fname = '_?._' THEN
+      SELECT * INTO selr FROM cel._ck_sel_type(
+        cel._ck_subst(sto -> 'map', argtypes -> 0, false), sto);
+      IF selr.err IS NOT NULL THEN
+        err := selr.err;
+        RETURN;
+      END IF;
+      sto := selr.sto;
+      typ := jsonb_build_object('kind', 'opaque',
+        'name', 'optional_type',
+        'params', jsonb_build_array(
+          cel._ck_subst(sto -> 'map', selr.typ, false)));
+      nodeo := nodeo || jsonb_build_object('ref',
+        jsonb_build_object('overloads',
+          jsonb_build_array(to_jsonb('select_optional_field'::text))));
+      sto := jsonb_set(sto, ARRAY['refs', nid],
+        nodeo -> 'ref');
+      RETURN;
+    END IF;
 
     IF NOT node ? 'target' THEN
       -- Global call: resolve the function name through the
