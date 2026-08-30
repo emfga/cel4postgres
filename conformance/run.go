@@ -342,7 +342,13 @@ func compareDeducedType(ast any, tc *test.SimpleTest) error {
 		return fmt.Errorf("AST is not checked: no types map")
 	}
 
-	got := types[rootID.String()]
+	return compareTypeJSON(want, types[rootID.String()])
+}
+
+// compareTypeJSON compares a deduced type against the expected one in
+// the rendered shape both sides share, so the AST's types map and a
+// type converted from cel-go are judged identically.
+func compareTypeJSON(want codec.TypeJSON, got any) error {
 	wantJSON, _ := json.Marshal(want)
 	gotJSON, _ := json.Marshal(got)
 	if string(wantJSON) != string(gotJSON) {

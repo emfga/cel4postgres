@@ -1,0 +1,2060 @@
+{
+  "cel_spec": "ba58ae5007845f3a1279b488cdeb79645ce958bb",
+  "cel_go": "v0.32.0",
+  "postgres": "18",
+  "totals": {
+    "files": 31,
+    "skipped_files": 6,
+    "cases": 2508,
+    "passed": 1841,
+    "skipped": 667,
+    "failed": 0
+  },
+  "files": [
+    {
+      "name": "basic",
+      "env": "standard",
+      "cases": 43,
+      "passed": 43,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "bindings_ext",
+      "env": "standard,bindings",
+      "cases": 8,
+      "passed": 8,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "comparisons",
+      "env": "standard",
+      "cases": 406,
+      "passed": 353,
+      "skipped": 53,
+      "failed": 0
+    },
+    {
+      "name": "conversions",
+      "env": "standard",
+      "cases": 109,
+      "passed": 109,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "dynamic",
+      "env": "standard",
+      "cases": 226,
+      "passed": 72,
+      "skipped": 154,
+      "failed": 0
+    },
+    {
+      "name": "encoders_ext",
+      "env": "standard,encoders",
+      "cases": 4,
+      "passed": 4,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "fields",
+      "env": "standard",
+      "cases": 60,
+      "passed": 60,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "fp_math",
+      "env": "standard",
+      "cases": 30,
+      "passed": 30,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "integer_math",
+      "env": "standard",
+      "cases": 64,
+      "passed": 64,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "lists",
+      "env": "standard",
+      "cases": 39,
+      "passed": 39,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "lists_ext",
+      "env": "standard,lists",
+      "cases": 52,
+      "passed": 52,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "logic",
+      "env": "standard",
+      "cases": 30,
+      "passed": 30,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "macros",
+      "env": "standard",
+      "cases": 44,
+      "passed": 44,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "macros2",
+      "env": "standard,two_var_comprehensions",
+      "cases": 46,
+      "passed": 46,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "math_ext",
+      "env": "standard,math",
+      "cases": 199,
+      "passed": 199,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "namespace",
+      "env": "standard",
+      "cases": 14,
+      "passed": 14,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "network_ext",
+      "env": "standard,network",
+      "cases": 69,
+      "passed": 69,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "optionals",
+      "env": "standard,optionals",
+      "cases": 70,
+      "passed": 59,
+      "skipped": 11,
+      "failed": 0
+    },
+    {
+      "name": "parse",
+      "env": "standard",
+      "cases": 219,
+      "passed": 173,
+      "skipped": 46,
+      "failed": 0
+    },
+    {
+      "name": "plumbing",
+      "env": "standard",
+      "cases": 5,
+      "passed": 5,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "string",
+      "env": "standard",
+      "cases": 51,
+      "passed": 51,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "string_ext",
+      "env": "standard,strings",
+      "cases": 216,
+      "passed": 213,
+      "skipped": 3,
+      "failed": 0
+    },
+    {
+      "name": "timestamps",
+      "env": "standard",
+      "cases": 78,
+      "passed": 78,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "name": "type_deduction",
+      "env": "standard,optionals",
+      "cases": 47,
+      "passed": 26,
+      "skipped": 21,
+      "failed": 0
+    },
+    {
+      "name": "unknowns",
+      "env": "standard",
+      "cases": 0,
+      "passed": 0,
+      "skipped": 0,
+      "failed": 0
+    }
+  ],
+  "skipped_files": [
+    {
+      "name": "block_ext",
+      "cases": 37,
+      "reason": "cel-go-internal cel.block form; no consumer"
+    },
+    {
+      "name": "enums",
+      "cases": 85,
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "name": "proto2",
+      "cases": 118,
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "name": "proto2_ext",
+      "cases": 18,
+      "reason": "requires proto2 extensions"
+    },
+    {
+      "name": "proto3",
+      "cases": 85,
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "name": "wrappers",
+      "cases": 36,
+      "reason": "requires proto3 TestAllTypes + Any unpacking"
+    }
+  ],
+  "skipped_cases": [
+    {
+      "file": "comparisons",
+      "section": "eq_literal",
+      "name": "not_eq_dyn_proto2_msg_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_literal",
+      "name": "not_eq_dyn_proto3_msg_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_bool_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_bool_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_bytes_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_bytes_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_double_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_double_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_float_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_float_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_int32_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_int32_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_int64_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_int64_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_string_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_string_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_uint32_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_uint32_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_uint64_proto2_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_uint64_proto3_null",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto2_missing_fields_neq",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto3_missing_fields_neq",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto_nan_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto_different_types",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto2_any_unpack_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto2_any_unpack_not_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto2_any_unpack_bytewise_fallback_not_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto2_any_unpack_bytewise_fallback_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto3_any_unpack_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto3_any_unpack_not_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto3_any_unpack_bytewise_fallback_not_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "eq_wrapper",
+      "name": "eq_proto3_any_unpack_bytewise_fallback_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto2_missing_fields_neq",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto3_missing_fields_neq",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto_nan_not_equal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto_different_types",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto2_any_unpack",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto2_any_unpack_bytewise_fallback",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto3_any_unpack",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "ne_literal",
+      "name": "ne_proto3_any_unpack_bytewise_fallback",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "comparisons",
+      "section": "gt_literal",
+      "name": "gt_bytes_one",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "comparisons",
+      "section": "gt_literal",
+      "name": "gt_bytes_one_to_empty",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "comparisons",
+      "section": "gt_literal",
+      "name": "not_gt_bytes_sorting",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "comparisons",
+      "section": "lte_literal",
+      "name": "lte_bytes_empty",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "comparisons",
+      "section": "lte_literal",
+      "name": "not_lte_bytes_length",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "comparisons",
+      "section": "gte_literal",
+      "name": "gte_bytes_to_empty",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "comparisons",
+      "section": "gte_literal",
+      "name": "not_gte_bytes_empty_to_nonempty",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "comparisons",
+      "section": "gte_literal",
+      "name": "gte_bytes_samelength",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "comparisons",
+      "section": "bound",
+      "name": "bytes_gt_left_false",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto2_max",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto2_min",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto2_range",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_read_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_read_proto2_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto3_max",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto3_min",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_assign_proto3_range",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_read_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int32",
+      "name": "field_read_proto3_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int64",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int64",
+      "name": "field_assign_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int64",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "int64",
+      "name": "field_assign_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_assign_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_assign_proto2_max",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_assign_proto2_range",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_assign_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_assign_proto3_max",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_assign_proto3_range",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_read_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint32",
+      "name": "field_read_proto2_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint64",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint64",
+      "name": "field_assign_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint64",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint64",
+      "name": "field_assign_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint64",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint64",
+      "name": "field_read_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "uint64",
+      "name": "field_read_proto2_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto2_subnorm",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto2_round_to_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto2_range",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_read_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_read_proto2_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto2_subnorm",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto3_round_to_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_assign_proto3_range",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_read_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "float",
+      "name": "field_read_proto3_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_assign_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_assign_proto2_range",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_read_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_read_proto2_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_assign_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_assign_proto3_range",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_read_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "double",
+      "name": "field_read_proto3_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "bool",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "bool",
+      "name": "field_assign_proto2_false",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "bool",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "bool",
+      "name": "field_assign_proto3_false",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "string",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "string",
+      "name": "field_assign_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "string",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "string",
+      "name": "field_assign_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "bytes",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "bytes",
+      "name": "field_assign_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "bytes",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "bytes",
+      "name": "field_assign_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_assign_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_read_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_read_proto2_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_assign_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_read_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "list",
+      "name": "field_read_proto3_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_assign_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_assign_proto2_bad",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_read_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_read_proto2_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_assign_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_assign_proto3_bad",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_read_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "struct",
+      "name": "field_read_proto3_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_null",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_null",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_null",
+      "name": "field_read_proto2_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_null",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_null",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_null",
+      "name": "field_read_proto3_unset",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_number",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_number",
+      "name": "field_assign_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_number",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_number",
+      "name": "field_read_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_number",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_number",
+      "name": "field_assign_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_number",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_number",
+      "name": "field_read_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_string",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_string",
+      "name": "field_assign_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_string",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_string",
+      "name": "field_read_proto2_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_string",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_string",
+      "name": "field_assign_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_string",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_string",
+      "name": "field_read_proto3_zero",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_bool",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_bool",
+      "name": "field_assign_proto2_false",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_bool",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_bool",
+      "name": "field_read_proto2_false",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_bool",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_bool",
+      "name": "field_assign_proto3_false",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_bool",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_bool",
+      "name": "field_read_proto3_false",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_struct",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_struct",
+      "name": "field_assign_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_struct",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_struct",
+      "name": "field_read_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_struct",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_struct",
+      "name": "field_assign_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_struct",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_struct",
+      "name": "field_read_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_list",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_list",
+      "name": "field_assign_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_list",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_list",
+      "name": "field_read_proto2_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_list",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_list",
+      "name": "field_assign_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_list",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "value_list",
+      "name": "field_read_proto3_empty",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "any",
+      "name": "literal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "any",
+      "name": "literal_no_field_access",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "any",
+      "name": "var",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "any",
+      "name": "field_assign_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "any",
+      "name": "field_read_proto2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "any",
+      "name": "field_assign_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "any",
+      "name": "field_read_proto3",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "dynamic",
+      "section": "complex",
+      "name": "any_list_map",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "has_optional_ofNonZeroValue_struct_optional_ofNonZeroValue_map_optindex_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "optional_ofNonZeroValue_struct_optional_ofNonZeroValue_map_optindex_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "struct_map_optindex_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "struct_optional_ofNonZeroValue_map_optindex_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "struct_map_optindex_field_nested",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "struct_list_optindex_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "empty_struct_optindex_hasValue",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "optional_empty_struct_optindex_hasValue",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "struct_optindex_value",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "optional_struct_optindex_value",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "optional_struct_optindex_index_value",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "nest",
+      "name": "message_literal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "repeat",
+      "name": "select",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "repeat",
+      "name": "message_literal",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "single_quoted_octal_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "double_quoted_octal_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_single_quoted_octal_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_double_quoted_octal_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "single_quoted_lower_x_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "double_quoted_lower_x_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_single_quoted_lower_x_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_double_quoted_lower_x_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "single_quoted_upper_x_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "double_quoted_upper_x_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_single_quoted_upper_x_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_double_quoted_upper_x_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "single_quoted_lower_u_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "double_quoted_lower_u_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_single_quoted_lower_u_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_double_quoted_lower_u_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "single_quoted_upper_u_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "double_quoted_upper_u_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_single_quoted_upper_u_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "string_literals",
+      "name": "triple_double_quoted_upper_u_escapes",
+      "reason": "PostgreSQL text cannot represent NUL in strings"
+    },
+    {
+      "file": "parse",
+      "section": "whitespace",
+      "name": "spaces",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "whitespace",
+      "name": "tabs",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "whitespace",
+      "name": "new_lines",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "whitespace",
+      "name": "new_pages",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "whitespace",
+      "name": "carriage_returns",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "comments",
+      "name": "new_line_terminated",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "as",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "break",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "const",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "continue",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "else",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "for",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "function",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "if",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "import",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "let",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "loop",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "package",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "namespace",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "return",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "var",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "void",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "parse",
+      "section": "struct_field_names",
+      "name": "while",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "string_ext",
+      "section": "format_errors",
+      "name": "object not allowed",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "string_ext",
+      "section": "format_errors",
+      "name": "object inside list",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "string_ext",
+      "section": "format_errors",
+      "name": "object inside map",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "complex_initializers",
+      "name": "struct",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "field_access",
+      "name": "int_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "field_access",
+      "name": "repeated_int_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "field_access",
+      "name": "map_bool_int",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "field_access",
+      "name": "enum_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "field_access",
+      "name": "repeated_enum_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "field_access",
+      "name": "enum_map_field",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "flexible_type_parameter_assignment",
+      "name": "comprehension_type_var_aliasing",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "flexible_type_parameter_assignment",
+      "name": "overload_type_var_aliasing",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "flexible_type_parameter_assignment",
+      "name": "list_parameters_do_not_unify",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "wrappers",
+      "name": "wrapper_promotion",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "wrappers",
+      "name": "wrapper_promotion_2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "wrappers",
+      "name": "wrapper_dyn_promotion",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "wrappers",
+      "name": "wrapper_dyn_promotion_2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "wrappers",
+      "name": "wrapper_primitive_assignable",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "wrappers",
+      "name": "wrapper_null_assignable",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "wrappers",
+      "name": "wrapper_ternary_parameter_assignment",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "wrappers",
+      "name": "wrapper_ternary_parameter_assignment_2",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "legacy_nullable_types",
+      "name": "null_assignable_to_message_parameter_candidate",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "legacy_nullable_types",
+      "name": "null_assignable_to_duration_parameter_candidate",
+      "reason": "requires protobuf descriptors"
+    },
+    {
+      "file": "type_deduction",
+      "section": "legacy_nullable_types",
+      "name": "null_assignable_to_timestamp_parameter_candidate",
+      "reason": "requires protobuf descriptors"
+    }
+  ],
+  "divergences": [
+    {
+      "file": "fields",
+      "section": "qualified_identifier_resolution",
+      "name": "map_key_float",
+      "expr": "{3.3:15.15, 1.0: 5}[1.0]",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: expected an error value, got {\"@t\":\"int\",\"v\":5}"
+    },
+    {
+      "file": "fields",
+      "section": "qualified_identifier_resolution",
+      "name": "map_value_repeat_key",
+      "expr": "{true:1,false:2,true:3}[true]",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: expected an error value, got {\"@t\":\"int\",\"v\":3}"
+    },
+    {
+      "file": "fields",
+      "section": "qualified_identifier_resolution",
+      "name": "map_value_repeat_key_heterogeneous",
+      "expr": "{0: 1, 0u: 2}[0.0]",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: expected an error value, got {\"@t\":\"int\",\"v\":1}"
+    },
+    {
+      "file": "network_ext",
+      "section": "ipv4",
+      "name": "ipv4_equals_ipv6",
+      "expr": "ip('::ffff:c0a8:1') == ip('192.168.0.1')",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: cel-go rejected the case: ERROR: \u003cinput\u003e:1:4: invalid ip argument: IPv4-mapped IPv6 address \"::ffff:c0a8:1\" is not allowed | ip('::ffff:c0a8:1') == ip('192.168.0.1') | ...^"
+    },
+    {
+      "file": "network_ext",
+      "section": "ipv4",
+      "name": "ipv4_not_equals_ipv6",
+      "expr": "ip('::ffff:c0a8:1') == ip('192.168.10.1')",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: cel-go rejected the case: ERROR: \u003cinput\u003e:1:4: invalid ip argument: IPv4-mapped IPv6 address \"::ffff:c0a8:1\" is not allowed | ip('::ffff:c0a8:1') == ip('192.168.10.1') | ...^"
+    },
+    {
+      "file": "optionals",
+      "section": "optionals",
+      "name": "map_optional_select_has",
+      "expr": "has({'foo': optional.none()}.foo.bar)",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: cel-go rejected the case: no such key: bar"
+    },
+    {
+      "file": "string_ext",
+      "section": "value_errors",
+      "name": "indexof_out_of_range",
+      "expr": "'tacocat'.indexOf('a', 30) == -1",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: expected an error value, got {\"@t\":\"bool\",\"v\":true}"
+    },
+    {
+      "file": "string_ext",
+      "section": "value_errors",
+      "name": "lastindexof_out_of_range",
+      "expr": "'tacocat'.lastIndexOf('a', 30) == -1",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: expected an error value, got {\"@t\":\"bool\",\"v\":true}"
+    },
+    {
+      "file": "timestamps",
+      "section": "duration_converters",
+      "name": "get_milliseconds",
+      "expr": "x.getMilliseconds()",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: result mismatch: want {\"@t\":\"int\",\"v\":321} got {\"@t\":\"int\",\"v\":123321}"
+    },
+    {
+      "file": "type_deduction",
+      "section": "legacy_nullable_types",
+      "name": "null_assignable_to_abstract_parameter_candidate",
+      "expr": "[optional.of(1), null][0]",
+      "cel4postgres": "matches the corpus",
+      "cel_go": "disagrees: deduced type mismatch: want {\"kind\":\"opaque\",\"name\":\"optional_type\",\"params\":[{\"kind\":\"int\"}]} got {\"kind\":\"null\"}"
+    }
+  ],
+  "failures": null
+}
