@@ -2,16 +2,11 @@ package conformance
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
 	"testing"
 
-	test "cel.dev/expr/conformance/test"
-	"github.com/jackc/pgx/v5"
-
-	"github.com/emfga/cel4postgres/internal/codec"
 	"github.com/emfga/cel4postgres/internal/corpus"
 	"github.com/emfga/cel4postgres/internal/testdb"
 )
@@ -71,11 +66,7 @@ func TestSimple(t *testing.T) {
 	}
 	defer conn.Close(ctx)
 
-	// Probed once so a not-yet-implemented stage fails each case with
-	// one clear line instead of thousands of undefined-function SQL
-	// errors, and so a missing function can never masquerade as a CEL
-	// error an eval_error case would spuriously pass on.
-	stages, err := installedStages(ctx, conn)
+	stages, err := InstalledStages(ctx, conn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,296 +91,18 @@ func TestSimple(t *testing.T) {
 				t.Run(section.GetName(), func(t *testing.T) {
 					for _, tc := range section.GetTest() {
 						t.Run(tc.GetName(), func(t *testing.T) {
-							runCase(t, ctx, conn, stages, file,
-								section.GetName(), tc)
+							result := RunCase(ctx, conn, stages,
+								file, section.GetName(), tc)
+							switch result.Status {
+							case Skipped:
+								t.Skip(result.Detail)
+							case Failed:
+								t.Fatal(result.Detail)
+							}
 						})
 					}
 				})
 			}
 		})
 	}
-}
-
-// stageSet records which cel.* entry points exist in the database, so
-// failures name the missing stage rather than surfacing SQL errors.
-type stageSet struct {
-	parse, check, eval bool
-}
-
-func installedStages(
-	ctx context.Context, conn *pgx.Conn,
-) (stageSet, error) {
-	var stages stageSet
-	err := conn.QueryRow(ctx,
-		`SELECT to_regprocedure('cel.parse(text, text)') IS NOT NULL,
-		        to_regprocedure('cel.check(jsonb, text, jsonb)')
-		            IS NOT NULL,
-		        to_regprocedure('cel.eval(jsonb, jsonb, text)')
-		            IS NOT NULL`,
-	).Scan(&stages.parse, &stages.check, &stages.eval)
-	if err != nil {
-		return stages, fmt.Errorf("probe installed stages: %w", err)
-	}
-	return stages, nil
-}
-
-// expectsError reports whether the case's result matcher is
-// eval_error. Parse and check failures pass exactly these cases; the
-// corpus never asserts on error message text (measured -- plumbing
-// carries a deliberately bogus one), so existence is the whole test.
-func expectsError(tc *test.SimpleTest) bool {
-	_, ok := tc.GetResultMatcher().(*test.SimpleTest_EvalError)
-	return ok
-}
-
-// stageErrors extracts the {"errors": [...]} failure shape that
-// cel.parse and cel.check return instead of an envelope.
-func stageErrors(envelope any) ([]any, bool) {
-	m, ok := envelope.(map[string]any)
-	if !ok {
-		return nil, false
-	}
-	errs, ok := m["errors"].([]any)
-	return errs, ok
-}
-
-func runCase(
-	t *testing.T,
-	ctx context.Context,
-	conn *pgx.Conn,
-	stages stageSet,
-	file, section string,
-	tc *test.SimpleTest,
-) {
-	if reason := skipReason(file, section, tc.GetName()); reason != "" {
-		t.Skip(reason)
-	}
-
-	env := EnvFor(file)
-
-	// Parse.
-	if !stages.parse {
-		t.Fatal("parse stage: cel.parse(text, text) is not installed")
-	}
-	var raw []byte
-	err := conn.QueryRow(ctx,
-		"SELECT cel.parse($1, $2)", tc.GetExpr(), env,
-	).Scan(&raw)
-	if err != nil {
-		t.Fatalf("parse stage: %v", err)
-	}
-	ast, err := codec.Decode(raw)
-	if err != nil {
-		t.Fatalf("parse stage: %v", err)
-	}
-	if errs, failed := stageErrors(ast); failed {
-		if expectsError(tc) {
-			return
-		}
-		t.Fatalf("parse stage: expression rejected: %v", errs)
-	}
-
-	// Check.
-	if !tc.GetDisableCheck() {
-		if !stages.check {
-			t.Fatal(
-				"check stage: cel.check(jsonb, text, jsonb) " +
-					"is not installed",
-			)
-		}
-		options, err := checkOptions(tc)
-		if err != nil {
-			t.Fatalf("check stage: %v", err)
-		}
-		err = conn.QueryRow(ctx,
-			"SELECT cel.check($1, $2, $3)", raw, env, options,
-		).Scan(&raw)
-		if err != nil {
-			t.Fatalf("check stage: %v", err)
-		}
-		ast, err = codec.Decode(raw)
-		if err != nil {
-			t.Fatalf("check stage: %v", err)
-		}
-		if errs, failed := stageErrors(ast); failed {
-			if expectsError(tc) {
-				return
-			}
-			t.Fatalf("check stage: expression rejected: %v", errs)
-		}
-	}
-
-	if tc.GetCheckOnly() {
-		compareDeducedType(t, ast, tc)
-		return
-	}
-
-	// Eval.
-	if !stages.eval {
-		t.Fatal(
-			"eval stage: cel.eval(jsonb, jsonb, text) is not installed",
-		)
-	}
-	activation, err := activationJSON(tc)
-	if err != nil {
-		t.Fatalf("eval stage: %v", err)
-	}
-	// The container reaches eval too: unchecked evaluation resolves
-	// names at runtime (checked ASTs bind them at check time, where
-	// the same option arrives via checkOptions).
-	evalOptions := map[string]any{}
-	if tc.GetContainer() != "" {
-		evalOptions["container"] = tc.GetContainer()
-	}
-	evalOptionsJSON, err := json.Marshal(evalOptions)
-	if err != nil {
-		t.Fatalf("eval stage: %v", err)
-	}
-	var rawResult []byte
-	err = conn.QueryRow(ctx,
-		"SELECT cel.eval($1, $2, $3, $4)",
-		raw, activation, env, evalOptionsJSON,
-	).Scan(&rawResult)
-	if err != nil {
-		t.Fatalf("eval stage: %v", err)
-	}
-	got, err := codec.Decode(rawResult)
-	if err != nil {
-		t.Fatalf("eval stage: %v", err)
-	}
-
-	compareResult(t, got, rawResult, tc)
-
-	// typed_result compares the deduced type in addition to the value.
-	if _, ok := tc.GetResultMatcher().(*test.SimpleTest_TypedResult); ok {
-		compareDeducedType(t, ast, tc)
-	}
-}
-
-// checkOptions builds the options argument of cel.check (decision 7):
-// the case's container and its type_env ident declarations.
-func checkOptions(tc *test.SimpleTest) ([]byte, error) {
-	options := map[string]any{}
-	if tc.GetContainer() != "" {
-		options["container"] = tc.GetContainer()
-	}
-	if typeEnv := tc.GetTypeEnv(); len(typeEnv) > 0 {
-		decls := []any{}
-		for _, decl := range typeEnv {
-			converted, err := codec.FromDecl(decl)
-			if err != nil {
-				return nil, err
-			}
-			decls = append(decls, converted)
-		}
-		options["decls"] = decls
-	}
-	return json.Marshal(options)
-}
-
-// activationJSON builds cel.eval's activation: binding name to tagged
-// value, always tagged -- the runner never sends plain JSON the
-// evaluator would have to guess about.
-func activationJSON(tc *test.SimpleTest) ([]byte, error) {
-	activation := map[string]any{}
-	for name, value := range tc.GetBindings() {
-		tagged, err := codec.FromExprValue(value)
-		if err != nil {
-			return nil, fmt.Errorf("binding %q: %w", name, err)
-		}
-		activation[name] = tagged
-	}
-	return json.Marshal(activation)
-}
-
-// compareResult applies the case's result matcher. A missing matcher
-// defaults to value: bool true (measured, workspace doc 01).
-func compareResult(
-	t *testing.T, got any, rawResult []byte, tc *test.SimpleTest,
-) {
-	switch matcher := tc.GetResultMatcher().(type) {
-	case *test.SimpleTest_Value:
-		want, err := codec.FromValue(matcher.Value)
-		if err != nil {
-			t.Fatalf("convert expected value: %v", err)
-		}
-		if !codec.Equal(want, got) {
-			wantJSON, _ := json.Marshal(want)
-			t.Fatalf("result mismatch:\n  want %s\n  got  %s",
-				wantJSON, rawResult)
-		}
-	case *test.SimpleTest_EvalError:
-		if kind, _ := taggedKind(got); kind != "error" {
-			t.Fatalf("expected an error value, got %s", rawResult)
-		}
-	case *test.SimpleTest_TypedResult:
-		want, err := codec.FromValue(matcher.TypedResult.GetResult())
-		if err != nil {
-			t.Fatalf("convert expected value: %v", err)
-		}
-		if !codec.Equal(want, got) {
-			wantJSON, _ := json.Marshal(want)
-			t.Fatalf("result mismatch:\n  want %s\n  got  %s",
-				wantJSON, rawResult)
-		}
-	case nil:
-		want := map[string]any{"@t": "bool", "v": true}
-		if !codec.Equal(want, got) {
-			t.Fatalf("expected bool true, got %s", rawResult)
-		}
-	default:
-		// unknown / any_unknowns / any_eval_errors: zero corpus
-		// cases use them today (measured); a corpus update that
-		// introduces one must extend the runner, not pass silently.
-		t.Fatalf("unsupported result matcher %T", matcher)
-	}
-}
-
-// compareDeducedType compares the checked AST's root type against the
-// typed_result matcher's deduced type (check_only cases,
-// type_deduction file).
-func compareDeducedType(t *testing.T, ast any, tc *test.SimpleTest) {
-	typed, ok := tc.GetResultMatcher().(*test.SimpleTest_TypedResult)
-	if !ok {
-		t.Fatalf("check_only case without typed_result matcher")
-	}
-
-	want, err := codec.FromType(typed.TypedResult.GetDeducedType())
-	if err != nil {
-		t.Fatalf("convert expected type: %v", err)
-	}
-
-	envelope, ok := ast.(map[string]any)
-	if !ok {
-		t.Fatalf("checked AST is not an object")
-	}
-	root, ok := envelope["expr"].(map[string]any)
-	if !ok {
-		t.Fatalf("checked AST has no root expression")
-	}
-	rootID, ok := root["id"].(json.Number)
-	if !ok {
-		t.Fatalf("root expression has no id")
-	}
-	types, ok := envelope["types"].(map[string]any)
-	if !ok {
-		t.Fatalf("AST is not checked: no types map")
-	}
-
-	got := types[rootID.String()]
-	wantJSON, _ := json.Marshal(want)
-	gotJSON, _ := json.Marshal(got)
-	if string(wantJSON) != string(gotJSON) {
-		t.Fatalf("deduced type mismatch:\n  want %s\n  got  %s",
-			wantJSON, gotJSON)
-	}
-}
-
-func taggedKind(v any) (string, bool) {
-	m, ok := v.(map[string]any)
-	if !ok {
-		return "", false
-	}
-	kind, ok := m["@t"].(string)
-	return kind, ok
 }
