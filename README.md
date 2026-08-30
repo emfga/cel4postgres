@@ -3,11 +3,14 @@
 > CEL, natively in Postgres: a zero-dependency PL/pgSQL evaluator for
 > Google's Common Expression Language.
 
-**Status: scaffolding.** The development environment, the schema
-installer and the test harness exist and are green. The evaluator does
-not — there is no parser, checker or evaluator yet, and nothing reads
-the [cel-spec][cel-spec] conformance corpus. See [CLAUDE.md](CLAUDE.md)
-for the design the next commits are building toward.
+**Status: the evaluator is complete and the in-scope conformance
+corpus is green.** Parser, checker and evaluator install as plain SQL,
+with the standard library, the well-known types and eight extension
+libraries. Every in-scope case of the [cel-spec][cel-spec] corpus
+passes on a fresh install, with nothing omitted silently — see
+[docs/CONFORMANCE.md](docs/CONFORMANCE.md) for what that claim covers
+and [the generated report](docs/conformance-report.md) for the
+numbers.
 
 ## Why
 
@@ -37,8 +40,33 @@ actually there, so when the command returns, the database is ready to
 use:
 
 ```bash
-docker compose exec postgres psql -U cel -d cel -c 'SELECT cel.version()'
+docker compose exec postgres psql -U cel -d cel \
+  -c "SELECT cel.evaluate('[1, 2, 3].exists(n, n % 2 == 0)', '{}', 'standard')"
 ```
+
+```
+         evaluate
+---------------------------
+ {"v": true, "@t": "bool"}
+```
+
+Values are tagged JSON in and out, and the third argument names the
+environment. Expressions with free variables need those variables
+declared, which means the staged form — `parse`, `check` with
+declarations, `eval` with an activation:
+
+```sql
+SELECT cel.eval(
+  cel.check(cel.parse('size(x) > 2', 'standard'), 'standard',
+            '{"decls": [{"name": "x", "type": {"kind": "string"}}]}'),
+  '{"x": {"@t": "string", "v": "abc"}}', 'standard');
+```
+
+Every stage is pure — nothing writes, so all of them work on standbys
+and in read-only transactions, and a compiled AST can be cached in a
+table of your own. `parse` is `IMMUTABLE`; `check`, `eval` and
+`evaluate` are `STABLE`, since they read the registry. All are
+`PARALLEL SAFE`.
 
 Run the test suite — no Go toolchain needed on your machine:
 
@@ -95,10 +123,18 @@ is faster to iterate on. Go 1.26 or newer:
 ```bash
 docker compose up -d
 go test ./...
-go test ./... -v -run TestSchemaInstalled
+go test ./conformance/... -run TestSimple/basic
+go test ./conformance/... -run TestSimple/basic/self_eval_zeroish/self_eval_int_zero
 ```
 
-Both paths run the same tests against the same database.
+Both paths run the same tests against the same database. The
+conformance suite reads the corpus from a local cel-spec checkout
+named by `CEL_EXPR_DIR`, and regenerating the report after a change
+is one command:
+
+```bash
+go run ./internal/cmd/confreport
+```
 
 ## Installing into your own database
 
@@ -116,25 +152,28 @@ superuser.
 
 ## Scope
 
-Targeting the cel-spec core language over JSON-representable types, plus
-the well-known types (`Timestamp`, `Duration`, `Any`, `Struct`). The
-protobuf message surface — message construction, field presence, enums,
-wrapper types — is out of scope.
+The cel-spec core language over JSON-representable types, plus the
+well-known types — `Timestamp`, `Duration`, `Any`, `Struct`, `Value`,
+`ListValue` and the `Int32Value`-family wrappers, all of which are
+JSON-shaped and need no descriptor pool. The rest of the protobuf
+message surface — message construction, field presence, enums — is out
+of scope: it needs descriptors inside PostgreSQL and buys nothing for
+the JSON-shaped data this targets.
 
-Extension libraries (`strings`, `math`, `lists`, `sets`, `encoders`,
-`bindings`, `optionals`) and the OpenFGA dialect (`ipaddress`,
-`in_cidr`) are not enabled by default; they register into the evaluator
-rather than modifying it, and consumers will be able to register their
-own the same way.
+The extension libraries (`strings`, `math`, `lists`, `encoders`,
+`bindings`, `optionals`, two-variable comprehensions, `network`) are
+implemented, each behind its own environment name and none enabled by
+default. They register into the evaluator rather than modifying it, and
+consumers can register their own the same way.
 
 Conformance is measured against the [cel-spec][cel-spec] corpus with
-[cel-go][cel-go] as the behavioural reference, pinned at `v0.32.0`. The
-target is 100% of what is in scope, with anything skipped named
-explicitly rather than quietly dropped.
-
-The pin is exact and deliberate: which expressions the two
-implementations agree on moves with the cel-go version, so upgrading it
-means re-measuring conformance, not bumping a dependency.
+[cel-go][cel-go] as the behavioural reference, both pinned exactly:
+which expressions two implementations agree on moves with the version
+of either, so an upgrade re-measures conformance rather than bumping a
+dependency. [docs/CONFORMANCE.md](docs/CONFORMANCE.md) states what is
+excluded and every place cel4postgres deliberately answers differently
+from cel-go; [docs/conformance-report.md](docs/conformance-report.md)
+is generated from a run and lists every case not attempted, by name.
 
 ## References
 
