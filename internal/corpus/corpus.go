@@ -10,6 +10,7 @@ package corpus
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -30,9 +31,18 @@ import (
 	_ "cel.dev/expr/conformance/proto3"
 )
 
-// Dir returns the testdata directory of the cel-spec checkout, or an
+// Pin is the cel-spec commit the conformance corpus is measured at.
+//
+// It is pinned for the same reason cel-go is: the corpus defines what
+// a conformance number means, so it moves only deliberately, with a
+// re-measurement behind it. CI checks the corpus out at this commit
+// and the conformance report prints it, so this constant is the one
+// place the pin is written down -- a test keeps the workflow honest.
+const Pin = "ba58ae5007845f3a1279b488cdeb79645ce958bb"
+
+// Checkout returns the root of the local cel-spec checkout, or an
 // error naming the variable that fixes a missing configuration.
-func Dir() (string, error) {
+func Checkout() (string, error) {
 	root, err := dotenv.Lookup("CEL_EXPR_DIR")
 	if err != nil {
 		return "", err
@@ -45,7 +55,18 @@ func Dir() (string, error) {
 		)
 	}
 
-	dir := filepath.Join(root, "cel-spec", "tests", "simple", "testdata")
+	return filepath.Join(root, "cel-spec"), nil
+}
+
+// Dir returns the testdata directory of the cel-spec checkout, or an
+// error naming the variable that fixes a missing configuration.
+func Dir() (string, error) {
+	checkout, err := Checkout()
+	if err != nil {
+		return "", err
+	}
+
+	dir := filepath.Join(checkout, "tests", "simple", "testdata")
 	if _, err := os.Stat(dir); err != nil {
 		return "", fmt.Errorf(
 			"conformance corpus not found at %s: is CEL_EXPR_DIR "+
@@ -55,6 +76,27 @@ func Dir() (string, error) {
 	}
 
 	return dir, nil
+}
+
+// HeadSHA returns the commit the local cel-spec checkout sits at, or
+// "" when that cannot be determined -- a checkout unpacked from an
+// archive rather than cloned has no commit to report, and that is a
+// working configuration, not an error. Callers report the difference
+// rather than failing on it.
+func HeadSHA() (string, error) {
+	checkout, err := Checkout()
+	if err != nil {
+		return "", err
+	}
+
+	out, err := exec.Command(
+		"git", "-C", checkout, "rev-parse", "HEAD",
+	).Output()
+	if err != nil {
+		return "", nil
+	}
+
+	return strings.TrimSpace(string(out)), nil
 }
 
 // Files returns the corpus file names (without extension), sorted.
