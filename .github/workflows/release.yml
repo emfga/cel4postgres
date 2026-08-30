@@ -1,0 +1,92 @@
+name: Release
+
+# Manual only. Publishing is a deliberate act: someone chooses the
+# moment, from main, on the canonical repository -- never a fork,
+# and never as a side effect of a push.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    # Guarded twice over: workflow_dispatch lets a caller pick any
+    # ref, and forks carry this file too. Anything but main on
+    # emfga/cel4postgres skips rather than publishes.
+    if: >-
+      github.repository == 'emfga/cel4postgres' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # gh release create pushes the tag and uploads the assets.
+      contents: write
+
+    steps:
+      - uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build artifacts
+        id: build
+        run: |
+          ./scripts/build-release.sh
+          version=$(sed -n \
+            "s/^VALUES ('\([0-9][0-9.]*\)')$/\1/p" \
+            sql/000_install.sql)
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+
+      # A published artifact must install, not merely concatenate.
+      # Boot the same pinned image compose uses with the artifact as
+      # the initdb script and assert cel.version() answers. The
+      # all-in bundle and the core-only file are the two shapes that
+      # could break independently; each extension file is a verbatim
+      # copy of a sql/ script CI already installs.
+      - name: Smoke-test artifacts
+        env:
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          image=$(sed -n 's/^ *image: \(postgres:[^ ]*\)$/\1/p' \
+            compose.yaml)
+          init=/docker-entrypoint-initdb.d/install.sql
+          for artifact in \
+            "cel4postgres--$VERSION.sql" \
+            "cel4postgres-core--$VERSION.sql"
+          do
+            echo "== $artifact"
+            docker run -d --rm --name relcheck \
+              -e POSTGRES_DB=cel -e POSTGRES_USER=cel \
+              -e POSTGRES_PASSWORD=pw \
+              -v "$PWD/dist/$artifact:$init:ro" \
+              "$image" >/dev/null
+            got=
+            for _ in $(seq 60); do
+              got=$(docker exec relcheck psql -U cel -d cel -tAc \
+                'SELECT cel.version()' 2>/dev/null) && break
+              sleep 2
+            done
+            docker rm -f relcheck >/dev/null
+            if [ "$got" != "$VERSION" ]; then
+              echo "expected $VERSION, got '$got'" >&2
+              exit 1
+            fi
+          done
+
+      # The tag does not exist beforehand; gh creates it at the
+      # released commit, and re-running on an already-released
+      # version fails here instead of republishing.
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          notes="Install with: psql -v ON_ERROR_STOP=1"
+          notes="$notes -f cel4postgres--$VERSION.sql."
+          notes="$notes Verify downloads against SHA256SUMS."
+          gh release create "v$VERSION" dist/* \
+            --target "$GITHUB_SHA" \
+            --title "cel4postgres $VERSION" \
+            --notes "$notes"

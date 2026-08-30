@@ -7,3 +7,4 @@
 
 # CI-only corpus checkout location
 .cel-expr/
+dist/
