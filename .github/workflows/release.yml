@@ -9,20 +9,27 @@ on:
 permissions:
   contents: read
 
+# Guarded twice over on every job: workflow_dispatch lets a caller
+# pick any ref, and forks carry this file too. Anything but main on
+# emfga/cel4postgres skips rather than publishes.
+#
+# The artifact build is deterministic and instant, so each job
+# rebuilds dist/ from the checkout instead of passing files
+# between jobs -- fewer moving parts, and nothing to pin.
+
 jobs:
-  release:
-    # Guarded twice over: workflow_dispatch lets a caller pick any
-    # ref, and forks carry this file too. Anything but main on
-    # emfga/cel4postgres skips rather than publishes.
+  # The plain-scripts channel: the artifact is the initdb script
+  # for the same pinned image compose uses, and readiness is
+  # cel.version() answering. The all-in bundle and the core-only
+  # file are the two shapes that could break independently; each
+  # extension file is a verbatim copy of a sql/ script CI already
+  # installs.
+  smoke:
     if: >-
       github.repository == 'emfga/cel4postgres' &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      # gh release create pushes the tag and uploads the assets.
-      contents: write
-
     steps:
       - uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
         with:
@@ -30,31 +37,18 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Build artifacts
-        id: build
+      - name: Build and install artifacts
         run: |
           ./scripts/build-release.sh
           version=$(sed -n \
             "s/^VALUES ('\([0-9][0-9.]*\)')$/\1/p" \
             sql/000_install.sql)
-          echo "version=$version" >>"$GITHUB_OUTPUT"
-
-      # A published artifact must install, not merely concatenate.
-      # Boot the same pinned image compose uses with the artifact as
-      # the initdb script and assert cel.version() answers. The
-      # all-in bundle and the core-only file are the two shapes that
-      # could break independently; each extension file is a verbatim
-      # copy of a sql/ script CI already installs.
-      - name: Smoke-test artifacts
-        env:
-          VERSION: ${{ steps.build.outputs.version }}
-        run: |
           image=$(sed -n 's/^ *image: \(postgres:[^ ]*\)$/\1/p' \
             compose.yaml)
           init=/docker-entrypoint-initdb.d/install.sql
           for artifact in \
-            "cel4postgres--$VERSION.sql" \
-            "cel4postgres-core--$VERSION.sql"
+            "cel4postgres--$version.sql" \
+            "cel4postgres-core--$version.sql"
           do
             echo "== $artifact"
             docker run -d --rm --name relcheck \
@@ -69,24 +63,183 @@ jobs:
               sleep 2
             done
             docker rm -f relcheck >/dev/null
-            if [ "$got" != "$VERSION" ]; then
-              echo "expected $VERSION, got '$got'" >&2
+            if [ "$got" != "$version" ]; then
+              echo "expected $version, got '$got'" >&2
               exit 1
             fi
           done
 
-      # The tag does not exist beforehand; gh creates it at the
-      # released commit, and re-running on an already-released
-      # version fails here instead of republishing.
-      - name: Publish release
+  # The flagship channel: the same dist/ files, wrapped by
+  # scripts/pgtle-wrap.sh into pgtle.install_extension, installed
+  # with CREATE EXTENSION cel4postgres, and proven by evaluating
+  # an expression that needs the variant's environment. Env rows
+  # exist even in the core-only install, so only an evaluation is
+  # evidence that an extension's items are really there.
+  pgtle:
+    if: >-
+      github.repository == 'emfga/cel4postgres' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: all
+            parts: all
+            env: standard
+            expr: 1 + 2
+            want: '{"v": 3, "@t": "int"}'
+          - variant: core
+            parts: core
+            env: standard
+            expr: 1 + 2
+            want: '{"v": 3, "@t": "int"}'
+          - variant: ext_comprehensions
+            parts: core ext_comprehensions
+            env: standard,two_var_comprehensions
+            expr: '[1, 2, 3].transformList(i, v, v * 2)'
+            want: >-
+              {"v": [{"v": 2, "@t": "int"}, {"v": 4, "@t":
+              "int"}, {"v": 6, "@t": "int"}], "@t": "list"}
+          - variant: ext_optionals
+            parts: core ext_optionals
+            env: standard,optionals
+            expr: optional.of(1).hasValue()
+            want: '{"v": true, "@t": "bool"}'
+          - variant: ext_strings
+            parts: core ext_strings
+            env: standard,strings
+            expr: '"a,b".split(",")'
+            want: >-
+              {"v": [{"v": "a", "@t": "string"}, {"v": "b",
+              "@t": "string"}], "@t": "list"}
+          - variant: ext_math
+            parts: core ext_math
+            env: standard,math
+            expr: math.least(1, 2)
+            want: '{"v": 1, "@t": "int"}'
+          - variant: ext_lists
+            parts: core ext_lists
+            env: standard,lists
+            expr: '[3, 1, 2].sort()'
+            want: >-
+              {"v": [{"v": 1, "@t": "int"}, {"v": 2, "@t":
+              "int"}, {"v": 3, "@t": "int"}], "@t": "list"}
+          - variant: ext_encoders
+            parts: core ext_encoders
+            env: standard,encoders
+            expr: base64.encode(b"hi")
+            want: '{"v": "aGk=", "@t": "string"}'
+          - variant: ext_bindings
+            parts: core ext_bindings
+            env: standard,bindings
+            expr: cel.bind(x, 1, x + x)
+            want: '{"v": 2, "@t": "int"}'
+          - variant: ext_network
+            parts: core ext_network
+            env: standard,network
+            expr: isIP("127.0.0.1")
+            want: '{"v": true, "@t": "bool"}'
+    steps:
+      - uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build pg_tle image
+        run: |
+          base=$(sed -n 's/^ *image: \(postgres:[^ ]*\)$/\1/p' \
+            compose.yaml)
+          docker build -f docker/pg_tle.Dockerfile \
+            --build-arg BASE_IMAGE="$base" -t pgtle .
+
+      - name: Install through pg_tle and evaluate
+        env:
+          PARTS: ${{ matrix.parts }}
+          CEL_ENV: ${{ matrix.env }}
+          EXPR: ${{ matrix.expr }}
+          WANT: ${{ matrix.want }}
+        run: |
+          ./scripts/build-release.sh
+          version=$(sed -n \
+            "s/^VALUES ('\([0-9][0-9.]*\)')$/\1/p" \
+            sql/000_install.sql)
+          files=
+          for p in $PARTS; do
+            if [ "$p" = all ]; then
+              files="dist/cel4postgres--$version.sql"
+            else
+              files="$files dist/cel4postgres-$p--$version.sql"
+            fi
+          done
+          # shellcheck disable=SC2086
+          ./scripts/pgtle-wrap.sh cel4postgres "$version" \
+            $files >wrapped.sql
+          docker run -d --rm --name tle \
+            -e POSTGRES_DB=cel -e POSTGRES_USER=cel \
+            -e POSTGRES_PASSWORD=pw \
+            -v "$PWD/wrapped.sql:/wrapped.sql:ro" \
+            pgtle -c shared_preload_libraries=pg_tle >/dev/null
+          for _ in $(seq 60); do
+            docker exec tle pg_isready -U cel -d cel -q \
+              2>/dev/null && break
+            sleep 2
+          done
+          docker exec tle psql -U cel -d cel -v ON_ERROR_STOP=1 \
+            -c 'CREATE EXTENSION pg_tle;' \
+            -f /wrapped.sql \
+            -c 'CREATE EXTENSION cel4postgres;'
+          got=$(docker exec tle psql -U cel -d cel -tAc \
+            "SELECT extversion FROM pg_extension
+             WHERE extname = 'cel4postgres'")
+          if [ "$got" != "$version" ]; then
+            echo "pg_extension says '$got', not $version" >&2
+            exit 1
+          fi
+          got=$(docker exec tle psql -U cel -d cel -tAc "
+            SELECT cel.evaluate(\$e\$$EXPR\$e\$, '{}',
+                                '$CEL_ENV')")
+          docker rm -f tle >/dev/null
+          if [ "$got" != "$WANT" ]; then
+            echo "evaluate returned: $got" >&2
+            echo "expected:          $WANT" >&2
+            exit 1
+          fi
+
+  # The tag does not exist beforehand; gh creates it at the
+  # released commit, and re-running on an already-released
+  # version fails here instead of republishing.
+  publish:
+    if: >-
+      github.repository == 'emfga/cel4postgres' &&
+      github.ref == 'refs/heads/main'
+    needs: [smoke, pgtle]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # gh release create pushes the tag and uploads the assets.
+      contents: write
+    steps:
+      - uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build and publish
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.build.outputs.version }}
         run: |
+          ./scripts/build-release.sh
+          version=$(sed -n \
+            "s/^VALUES ('\([0-9][0-9.]*\)')$/\1/p" \
+            sql/000_install.sql)
           notes="Install with: psql -v ON_ERROR_STOP=1"
-          notes="$notes -f cel4postgres--$VERSION.sql."
+          notes="$notes -f cel4postgres--$version.sql."
           notes="$notes Verify downloads against SHA256SUMS."
-          gh release create "v$VERSION" dist/* \
+          gh release create "v$version" dist/* \
             --target "$GITHUB_SHA" \
-            --title "cel4postgres $VERSION" \
+            --title "cel4postgres $version" \
             --notes "$notes"
