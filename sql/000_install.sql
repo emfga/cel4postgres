@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS cel.schema_version (
 );
 
 INSERT INTO cel.schema_version (version)
-VALUES ('0.0.0')
+VALUES ('0.0.1')
 ON CONFLICT (version) DO NOTHING;
 
 -- The installed schema version. IMMUTABLE is deliberately wrong for
