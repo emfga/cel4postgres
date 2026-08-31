@@ -148,7 +148,11 @@ done
 ```
 
 It needs a role that may create the `cel` schema. It does not need
-superuser.
+superuser. [docs/INSTALL.md](docs/INSTALL.md) is the full guide:
+release artifacts and their checksums, self-hosted and AWS
+RDS/Aurora instructions — including installing as a real extension
+via [pg_tle](https://github.com/aws/pg_tle) — and the grants an
+application role needs.
 
 ## Scope
 
