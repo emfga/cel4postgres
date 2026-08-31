@@ -1,7 +1,7 @@
 // Package codec converts between the conformance corpus's protobuf
 // value/type messages and the tagged-jsonb representation cel4postgres
-// uses (workspace docs 02 and 03: tag key "@t", maps as entry arrays,
-// timestamps as {s, n, tz}, non-finite doubles as strings).
+// uses: tag key "@t", maps as entry arrays, timestamps as {s, n, tz},
+// non-finite doubles as strings.
 //
 // Numbers are carried as json.Number end to end so int64/uint64
 // payloads never pass through a float64.
@@ -54,8 +54,8 @@ func doublePayload(v float64) any {
 }
 
 // FromExprValue converts a corpus binding or expected result. Errors
-// and unknowns are values in this representation (workspace doc 02),
-// so all three ExprValue kinds map to a tag.
+// and unknowns are values in this representation, so all three
+// ExprValue kinds map to a tag.
 func FromExprValue(v *expr.ExprValue) (Tagged, error) {
 	switch kind := v.GetKind().(type) {
 	case *expr.ExprValue_Value:
@@ -136,8 +136,8 @@ func FromValue(v *expr.Value) (Tagged, error) {
 }
 
 // fromWellKnown converts the well-known-type messages that are in
-// scope without a descriptor pool (decision 3). Anything else is a
-// descriptor-dependent case the skip list already names.
+// scope without a descriptor pool (CLAUDE.md, Scope). Anything else
+// is a descriptor-dependent case the skip list already names.
 func fromWellKnown(message any) (Tagged, error) {
 	switch m := message.(type) {
 	case *timestamppb.Timestamp:

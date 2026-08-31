@@ -88,7 +88,7 @@ type CaseFailure struct {
 
 // Divergence is a case the two implementations judge differently.
 // Since cel4postgres follows the corpus wherever the two disagree
-// (the corpus-first ruling), these are almost always cases cel-go
+// (docs/CONFORMANCE.md), these are almost always cases cel-go
 // itself does not satisfy -- which is exactly what a reader comparing
 // the two needs told.
 type Divergence struct {

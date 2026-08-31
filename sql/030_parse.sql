@@ -1,8 +1,8 @@
 -- cel4postgres -- lexer, parser, macro engine.
 --
--- Hand-written lexer + precedence-climbing parser (workspace decision:
--- cel-go itself carries a Pratt parser with these semantics). Errors
--- travel as OUT parameters, never exceptions: cel.parse is labelled
+-- Hand-written lexer + precedence-climbing parser (cel-go itself
+-- carries a Pratt parser with these semantics). Errors travel as
+-- OUT parameters, never exceptions: cel.parse is labelled
 -- PARALLEL SAFE, and a BEGIN/EXCEPTION block's subtransaction would
 -- break that promise inside a parallel worker.
 --

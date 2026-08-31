@@ -7,7 +7,7 @@
 -- would -- no privileged path (CLAUDE.md, the four registries).
 --
 -- Semantics are cel-go v0.32.0's, encoded from measured runs and the
--- pinned source (workspace measurements.md): checked int64/uint64
+-- pinned source: checked int64/uint64
 -- arithmetic with overflow sentinels, IEEE-754 double arithmetic
 -- with the three non-finite sentinels, Go-style truncated division
 -- and remainder.
@@ -500,7 +500,7 @@ AS $$
 $$;
 
 -- Indexing. List indices accept int plus losslessly-coercible
--- double/uint (cel-go list index semantics, workspace doc 06).
+-- double/uint (cel-go list index semantics).
 
 CREATE OR REPLACE FUNCTION cel._f_index_list(args jsonb[])
 RETURNS jsonb
@@ -1126,8 +1126,8 @@ AS $$
       E'\n', ''));
 $$;
 
--- String tests. matches() is Postgres ~ for this milestone
--- (decision 9: all corpus patterns measured to agree with RE2).
+-- String tests. matches() is Postgres ~ (all corpus patterns
+-- measured to agree with RE2).
 
 CREATE OR REPLACE FUNCTION cel._f_contains(args jsonb[])
 RETURNS jsonb

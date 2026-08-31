@@ -11,8 +11,8 @@ import (
 
 // The corpus is external input: these tests pin the facts the suite
 // depends on -- the checkout is findable, every file parses, and the
-// file census matches what the conformance target (workspace doc 01)
-// was measured against. A count change here means the corpus moved
+// file census matches what the conformance target was measured
+// against. A count change here means the corpus moved
 // and the target needs re-measuring, not that this test is wrong.
 
 func TestEveryFileParses(t *testing.T) {
@@ -21,9 +21,7 @@ func TestEveryFileParses(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// 25 included + 6 excluded. Workspace doc 01 said "26 of 32";
-	// the corpus at the pinned checkout has 31 -- recorded in the
-	// workspace ISSUES register when this was measured.
+	// 25 included + 6 excluded at the pinned checkout.
 	if len(files) != 31 {
 		t.Errorf("corpus has %d files, the target was measured on 31",
 			len(files))

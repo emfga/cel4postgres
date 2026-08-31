@@ -1,10 +1,7 @@
-// Package conformance holds the suite that measures cel4postgres
-// against the cel-spec conformance corpus.
-//
-// Nothing here reads a .textproto yet. These are the infrastructure
-// tests: they fail loudly when the database is missing or the schema
-// was never installed, so that a later red conformance run is never
-// ambiguous about which of the two went wrong.
+// The infrastructure tests: they fail loudly when the database is
+// missing or the schema was never installed, so that a red
+// conformance run is never ambiguous about which of the two went
+// wrong.
 package conformance
 
 import (

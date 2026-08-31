@@ -12,9 +12,9 @@ import (
 	"cel.dev/cel-go/common/types/ref"
 )
 
-// ParseShape parses an expression with cel-go and returns its AST as
-// the node shape cel4postgres emits (workspace doc 03), without ids
-// or source offsets. The parse unit tests diff cel.parse output
+// ParseShape parses an expression with cel-go and returns its AST
+// as the node shape cel4postgres emits, without ids or source
+// offsets. The parse unit tests diff cel.parse output
 // against this, so the two parsers are compared structurally rather
 // than by transcription.
 func ParseShape(

@@ -7,8 +7,8 @@
 -- 'two_var_comprehensions' env; nothing ships in 'standard'.
 --
 -- Extension scripts live at the top of sql/ with a 1xx prefix
--- because initdb runs only the directory's top level; the doc-07
--- sql/ext/ subdirectory would silently not install.
+-- because initdb runs only the directory's top level; a
+-- subdirectory would silently not install.
 
 BEGIN;
 

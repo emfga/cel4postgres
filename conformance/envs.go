@@ -7,7 +7,7 @@ package conformance
 // default environment quietly gained an extension is not a passing
 // file.
 //
-// macros2 was measured (Phase 0): every one of its 46 cases uses the
+// macros2 was measured: every one of its 46 cases uses the
 // two-var comprehension macros and none uses optional syntax, so the
 // whole file takes two_var_comprehensions and nothing else.
 var fileEnvs = map[string]string{

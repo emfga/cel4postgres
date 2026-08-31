@@ -10,8 +10,9 @@
 -- nullability, and declaration-ordered overload resolution with
 -- result-type widening.
 --
--- Types are the doc-03 json encoding; the substitution mapping is a
--- jsonb object keyed by the parameter type's canonical jsonb text.
+-- Types are the registry's json type encoding; the substitution
+-- mapping is a jsonb object keyed by the parameter type's canonical
+-- jsonb text.
 -- Errors fail fast: conformance asserts on check-failure existence,
 -- never on collecting several.
 
@@ -429,8 +430,7 @@ BEGIN
     -- Joining null with a nullable type keeps the nullable type:
     -- the corpus's legacy_nullable_types section fixes this and
     -- cel-go v0.32.0 skips those cases as known-wrong (its
-    -- mostGeneral would answer null) -- see the workspace
-    -- measurements log for the adjudication.
+    -- mostGeneral would answer null).
     IF prev ->> 'kind' = 'null' AND cel._ck_nullable(cur)
        AND cur ->> 'kind' <> 'null' THEN
       t := cur;
@@ -1248,7 +1248,7 @@ END;
 $$;
 
 -- Checks a parse envelope under an environment. options carries the
--- per-case container and extra ident declarations (decision 7).
+-- per-case container and extra ident declarations.
 -- Returns the annotated envelope, or {"errors": [...]}.
 CREATE OR REPLACE FUNCTION cel.check(ast jsonb, env text, options jsonb)
 RETURNS jsonb

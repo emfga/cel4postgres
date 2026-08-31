@@ -13,13 +13,13 @@ import (
 
 // string(double) is implemented by cel._double_text, which must match
 // Go's %g exactly, because that is what cel-go's string(double) emits
-// (common/types/double.go:141, pinned v0.32.0). The workspace ruling
-// on I2 committed this test: it fuzzes that claim on every CI run
-// rather than trusting a handful of probes -- and its very first run
-// proved bare float8::text insufficient (Go switches to scientific
-// notation at e+06, Postgres at e+15), which is why the function
-// exists. A mismatch here reopens the formatting question with a
-// concrete value in hand.
+// (common/types/double.go:141, pinned v0.32.0). This test fuzzes
+// that claim on every CI run rather than trusting a handful of
+// probes -- and its very first run proved bare float8::text
+// insufficient (Go switches to scientific notation at e+06,
+// Postgres at e+15), which is why the function exists. A mismatch
+// here reopens the formatting question with a concrete value in
+// hand.
 //
 // Non-finite values are excluded by design: they never reach the
 // Postgres formatter (the evaluator emits +Inf/-Inf/NaN itself from

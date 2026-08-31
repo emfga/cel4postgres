@@ -4,7 +4,9 @@
 -- the cel schema. Nothing here requires superuser, a filesystem, or
 -- a server restart: see CLAUDE.md, "Installation and privileges".
 --
--- Run with:  psql -v ON_ERROR_STOP=1 -f sql/install.sql
+-- Run with:  psql -v ON_ERROR_STOP=1 -f sql/000_install.sql
+-- followed by the other sql/ scripts in numbered order (or use a
+-- release artifact, which bundles them already ordered).
 
 BEGIN;
 

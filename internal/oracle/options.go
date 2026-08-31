@@ -12,7 +12,7 @@ import (
 // build the equivalent reference environment. "standard" is the base
 // cel.NewEnv (standard library and macros) plus identifier-escape
 // syntax, which cel-go's conformance run enables for the whole corpus
-// and our standard env includes (workspace doc 01).
+// and our standard env includes.
 var envOptions = map[string][]cel.EnvOption{
 	// Cross-type numeric comparisons and error-on-bad-presence-test
 	// are cel-go options, but the conformance corpus requires both

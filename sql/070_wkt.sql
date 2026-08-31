@@ -1,13 +1,12 @@
 -- Well-known types: timestamps, durations, the wrapper types,
--- Struct/Value/ListValue, Any and NullValue (workspace doc 07,
--- decision 3). Everything registers through the same four tables the
--- standard library uses; nothing here is a core patch.
+-- Struct/Value/ListValue, Any and NullValue. Everything registers
+-- through the same four tables the standard library uses; nothing
+-- here is a core patch.
 --
 -- Timestamp values are {"s": epoch seconds, "n": nanos 0..1e9-1,
--- "tz": fixed offset minutes}; durations are total nanoseconds
--- (doc 02). Semantics are cel-go v0.32.0's (common/types/
--- timestamp.go, duration.go, overflow.go), confirmed by conformance
--- runs -- see the workspace measurements log.
+-- "tz": fixed offset minutes}; durations are total nanoseconds.
+-- Semantics are cel-go v0.32.0's (common/types/timestamp.go,
+-- duration.go, overflow.go), confirmed by conformance runs.
 
 BEGIN;
 
@@ -502,7 +501,7 @@ AS $$ SELECT cel._ts_get(args, 'milliseconds') $$;
 
 -- Duration getters are truncated totals, except getMilliseconds,
 -- which is the sub-second component: the corpus and cel-java agree
--- against cel-go v0.32.0 here (workspace ISSUES R2 adjudication).
+-- against cel-go v0.32.0 here.
 CREATE OR REPLACE FUNCTION cel._f_dur_hours(args jsonb[])
 RETURNS jsonb LANGUAGE sql IMMUTABLE PARALLEL SAFE
 SET search_path = cel, pg_temp
@@ -659,7 +658,7 @@ AS $$
 $$;
 
 -- Any needs a descriptor pool to pack; its row exists so the name
--- resolves (workspace doc 07).
+-- resolves.
 CREATE OR REPLACE FUNCTION cel._wkt_any(fields jsonb)
 RETURNS jsonb LANGUAGE sql IMMUTABLE PARALLEL SAFE
 SET search_path = cel, pg_temp

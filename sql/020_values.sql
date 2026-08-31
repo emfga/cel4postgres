@@ -132,10 +132,9 @@ COMMIT;
 
 BEGIN;
 
--- Tagged-value primitives. The kind tag carries type identity
--- (workspace doc 02); these helpers are the single place equality,
--- ordering and payload access are defined, so every impl and the
--- evaluator agree on them.
+-- Tagged-value primitives. The kind tag carries type identity;
+-- these helpers are the single place equality, ordering and payload
+-- access are defined, so every impl and the evaluator agree on them.
 
 CREATE OR REPLACE FUNCTION cel._err(msg text, id bigint DEFAULT NULL)
 RETURNS jsonb
@@ -327,7 +326,7 @@ BEGIN
       RETURN true;
     ELSE
       -- Opaque and future kinds: structural payload identity unless
-      -- a registered equality overrides it (extension phases).
+      -- a registered equality overrides it.
       RETURN a - '@t' = b - '@t';
   END CASE;
 END;

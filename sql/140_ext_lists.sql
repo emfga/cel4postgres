@@ -127,9 +127,8 @@ BEGIN
     END IF;
     idx := idx || i;
   END LOOP;
-  -- Insertion sort on indices (stable, adequate for test-sized
-  -- lists; the no-performance-work rule was struck but conformance
-  -- sizes do not warrant more).
+  -- Insertion sort on indices: stable, and adequate for
+  -- conformance-sized lists.
   FOR i IN 2 .. n LOOP
     j := i;
     WHILE j > 1 LOOP

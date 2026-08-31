@@ -6,8 +6,8 @@ import (
 	expr "cel.dev/expr"
 )
 
-// TypeJSON is the type encoding of workspace doc 03, used in checked
-// ASTs, registry rows and declarations.
+// TypeJSON is the type encoding used in checked ASTs, registry rows
+// and declarations.
 type TypeJSON = map[string]any
 
 func kindOnly(kind string) TypeJSON {
@@ -24,8 +24,8 @@ var primitiveKinds = map[expr.Type_PrimitiveType]string{
 }
 
 // wellKnownMessages normalizes well-known message names exactly as
-// cel-go's checkedWellKnowns does at declaration time (workspace doc
-// 03; cel-go common/types.go:834).
+// cel-go's checkedWellKnowns does at declaration time (cel-go
+// v0.32.0, common/types.go:834).
 var wellKnownMessages = map[string]TypeJSON{
 	"google.protobuf.Timestamp": kindOnly("timestamp"),
 	"google.protobuf.Duration":  kindOnly("duration"),

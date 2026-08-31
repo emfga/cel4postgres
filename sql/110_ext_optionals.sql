@@ -1,10 +1,9 @@
 -- The optionals extension, part one: the optional_type opaque type
 -- and the optional.of / optional.ofNonZeroValue / optional.none /
 -- value / hasValue functions (cel-go cel/library.go optionals, pinned
--- v0.32.0). The optional-syntax sugar (x.?f, [?x], {?k: v}), or /
--- orValue, and the optMap/optFlatMap macros arrive with the Phase 6
--- extension work; type_deduction's optional sections need only the
--- declaration surface here.
+-- v0.32.0). Part two, further down, adds the optional-syntax sugar
+-- (x.?f, [?x], {?k: v}), or / orValue, and the optMap/optFlatMap
+-- macros.
 --
 -- An optional value is the opaque
 --   {"@t": "opaque", "type": "optional_type", "v":

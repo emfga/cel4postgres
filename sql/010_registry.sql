@@ -169,8 +169,8 @@ ON CONFLICT (name) DO NOTHING;
 
 -- Extension environments. The rows exist from day one so an env
 -- union like 'standard,strings' resolves before the extension's own
--- install script has seeded any items into them; the scripts under
--- sql/ext/ fill them in later phases. optionals owns the
+-- install script has seeded any items into them; the sql/1xx
+-- extension scripts fill them in. optionals owns the
 -- optional-syntax parse flag.
 INSERT INTO cel.env (name, flags) VALUES
   ('strings', '{}'),

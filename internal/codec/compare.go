@@ -7,8 +7,8 @@ import (
 )
 
 // Equal compares two tagged values structurally, with the two
-// relaxations the conformance comparison requires (workspace doc 08):
-// map entries are order-agnostic, and NaN matches NaN (the spec's
+// relaxations the conformance comparison requires: map entries are
+// order-agnostic, and NaN matches NaN (the spec's
 // rule; cel-go's own harness lacks it, ours has it). Kinds must match
 // exactly -- an int result never equals a uint or double expectation,
 // because result identity is what the tag exists to carry.

@@ -155,8 +155,7 @@ $$;
 
 -- Candidate variable names for a dotted name under a container:
 -- container "a.b" tries a.b.name, a.name, name -- cel-go's namespace
--- resolution order (measured: container/shadowing runs in
--- measurements.md).
+-- resolution order, measured against v0.32.0.
 CREATE OR REPLACE FUNCTION cel._name_candidates(
   name text, absolute boolean, ctr text
 )
@@ -621,9 +620,10 @@ BEGIN
           END IF;
           v := v -> 'v' -> 'v';
         END IF;
-        -- Key type restriction and duplicate rejection are dynamic
-        -- (corpus-first rulings: forbidden double/null keys and
-        -- normalized duplicates both error at construction).
+        -- Key type restriction and duplicate rejection are dynamic:
+        -- forbidden double/null keys and normalized duplicates both
+        -- error at construction (the corpus's rule -- see
+        -- docs/CONFORMANCE.md on following it over cel-go).
         IF key ->> '@t' NOT IN ('bool', 'int', 'uint', 'string') THEN
           RETURN cel._err(format(
             'unsupported map key type: %s', key ->> '@t'), nid);
@@ -698,7 +698,7 @@ BEGIN
 END;
 $$;
 
--- The comprehension fold (workspace doc 06). The loop-termination
+-- The comprehension fold. The loop-termination
 -- rule is load-bearing: only a genuine bool false stops iteration --
 -- an error or unknown condition keeps folding, which is how exists
 -- recovers from early errors when a later element is true.

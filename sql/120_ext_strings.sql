@@ -8,7 +8,7 @@
 -- are character-based under UTF8, which lines up. One deliberate
 -- divergence from cel-go: indexOf/lastIndexOf with an out-of-range
 -- offset error instead of returning -1 -- the corpus and cel-java
--- agree against cel-go v0.32.0 there (workspace ISSUES R2).
+-- agree against cel-go v0.32.0 there.
 
 BEGIN;
 
@@ -41,7 +41,7 @@ $$;
 -- Shared scan for indexOf / lastIndexOf. The empty-substring case
 -- returns the clamped offset before the bounds check (matching both
 -- cel-go and cel-java); a non-empty search with an out-of-range
--- offset errors (corpus + cel-java adjudication, ISSUES R2).
+-- offset errors (corpus + cel-java adjudication).
 CREATE OR REPLACE FUNCTION cel._str_index(
   s text, sub text, off numeric, backwards boolean
 )

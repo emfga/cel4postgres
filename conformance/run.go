@@ -234,8 +234,8 @@ func stageErrors(envelope any) ([]any, bool) {
 	return errs, ok
 }
 
-// checkOptions builds the options argument of cel.check (decision 7):
-// the case's container and its type_env ident declarations.
+// checkOptions builds the options argument of cel.check: the case's
+// container and its type_env ident declarations.
 func checkOptions(tc *test.SimpleTest) ([]byte, error) {
 	options := map[string]any{}
 	if tc.GetContainer() != "" {
@@ -271,7 +271,7 @@ func activationJSON(tc *test.SimpleTest) ([]byte, error) {
 }
 
 // compareResult applies the case's result matcher. A missing matcher
-// defaults to value: bool true (measured, workspace doc 01).
+// defaults to value: bool true (measured against cel-go v0.32.0).
 func compareResult(got any, rawResult []byte, tc *test.SimpleTest) error {
 	compare := func(want any) error {
 		if codec.Equal(want, got) {
