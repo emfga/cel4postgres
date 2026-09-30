@@ -3,8 +3,6 @@
 -- bind-style comprehension (empty range, accumulator = the bound
 -- variable). Registered under the 'bindings' env.
 
-BEGIN;
-
 CREATE OR REPLACE FUNCTION cel._mx_cel_bind(
   target jsonb, args jsonb, next_id bigint,
   OUT expr jsonb, OUT next_id_out bigint, OUT err text
@@ -62,5 +60,3 @@ ON CONFLICT (name, arity, member) DO UPDATE
 INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('bindings', 'macro', 'bind/3/1')
 ON CONFLICT DO NOTHING;
-
-COMMIT;

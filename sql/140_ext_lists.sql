@@ -2,8 +2,6 @@
 -- slice, flatten, sort, sortBy (macro over @sortByAssociatedKeys),
 -- lists.range, reverse, distinct. Registered under the 'lists' env.
 
-BEGIN;
-
 CREATE OR REPLACE FUNCTION cel._list_val(elems jsonb)
 RETURNS jsonb
 LANGUAGE sql
@@ -408,5 +406,3 @@ ON CONFLICT DO NOTHING;
 INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('lists', 'macro', 'sortBy/2/1')
 ON CONFLICT DO NOTHING;
-
-COMMIT;

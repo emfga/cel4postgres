@@ -10,8 +10,6 @@
 -- offset error instead of returning -1 -- the corpus and cel-java
 -- agree against cel-go v0.32.0 there.
 
-BEGIN;
-
 CREATE OR REPLACE FUNCTION cel._str_val(s text)
 RETURNS jsonb
 LANGUAGE sql
@@ -350,10 +348,6 @@ BEGIN
   RETURN cel._str_val('"' || res || '"');
 END;
 $$;
-
-COMMIT;
-
-BEGIN;
 
 -- string.format ------------------------------------------------------
 
@@ -795,5 +789,3 @@ WHERE id IN (
   'list_join', 'list_join_string', 'strings_quote',
   'string_format')
 ON CONFLICT DO NOTHING;
-
-COMMIT;

@@ -8,8 +8,6 @@
 -- Semantics are cel-go v0.32.0's (common/types/timestamp.go,
 -- duration.go, overflow.go), confirmed by conformance runs.
 
-BEGIN;
-
 -- Range-checked constructors ------------------------------------------
 
 -- Seconds range is year 0001..9999 (timestamp.go:54-56); outside it
@@ -531,10 +529,6 @@ AS $$
     trunc((args[1] ->> 'v')::numeric / 1000000) % 1000);
 $$;
 
-COMMIT;
-
-BEGIN;
-
 -- Construction impls ---------------------------------------------------
 -- Each receives the evaluated fields as a jsonb object of tagged
 -- values (050_eval.sql struct branch). Wrappers unwrap to their
@@ -881,5 +875,3 @@ ON CONFLICT DO NOTHING;
 INSERT INTO cel.env_item (env, kind, ref)
 SELECT 'standard', 'overload', id FROM cel.overload
 ON CONFLICT DO NOTHING;
-
-COMMIT;

@@ -45,6 +45,12 @@ jobs:
       # than reaching the suite as a mysterious test failure.
       - run: docker compose up -d --wait
 
+      # Instant, and it refuses a sql/ script that opens or closes a
+      # transaction -- the property the plain release artifacts
+      # depend on.
+      - name: Build release artifacts
+        run: ./scripts/build-release.sh
+
       - name: Check formatting
         run: |
           unformatted=$(gofmt -l .)

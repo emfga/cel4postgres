@@ -6,8 +6,6 @@
 -- core could reach anything the registry cannot describe, the
 -- registry would stop being the extension mechanism.
 
-BEGIN;
-
 -- Custom and well-known types: name resolution, construction,
 -- equality and conversion hooks. Every row visible in an env also
 -- implies an identifier of type type(T) under the type's name.
@@ -182,5 +180,3 @@ INSERT INTO cel.env (name, flags) VALUES
   ('optionals', '{"optional_syntax": true}'),
   ('network', '{}')
 ON CONFLICT (name) DO NOTHING;
-
-COMMIT;

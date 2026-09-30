@@ -10,8 +10,6 @@
 -- because initdb runs only the directory's top level; a
 -- subdirectory would silently not install.
 
-BEGIN;
-
 -- Extracts and validates the two iteration variables
 -- (ext/comprehensions.go extractIterVars).
 CREATE OR REPLACE FUNCTION cel._mx2_vars(
@@ -355,5 +353,3 @@ INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('two_var_comprehensions', 'overload', '@mapInsert_map_key_value'),
   ('two_var_comprehensions', 'overload', '@mapInsert_map_map')
 ON CONFLICT DO NOTHING;
-
-COMMIT;

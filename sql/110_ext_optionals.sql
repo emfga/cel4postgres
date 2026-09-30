@@ -11,8 +11,6 @@
 -- (day-one invariant 3: extension types are registry rows over the
 -- opaque kind, never new core kinds).
 
-BEGIN;
-
 CREATE OR REPLACE FUNCTION cel._opt_of(v jsonb)
 RETURNS jsonb
 LANGUAGE sql
@@ -152,10 +150,6 @@ INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('optionals', 'overload', 'optional_value'),
   ('optionals', 'overload', 'optional_hasValue')
 ON CONFLICT DO NOTHING;
-
-COMMIT;
-
-BEGIN;
 
 -- Part two: the optional-syntax operators, or/orValue, and the
 -- optMap/optFlatMap macros (cel/library.go optionals block,
@@ -493,5 +487,3 @@ INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('optionals', 'macro', 'optMap/2/1'),
   ('optionals', 'macro', 'optFlatMap/2/1')
 ON CONFLICT DO NOTHING;
-
-COMMIT;

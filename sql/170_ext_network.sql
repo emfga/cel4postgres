@@ -13,8 +13,6 @@
 -- zone suffixes, no IPv4-mapped IPv6, and a CIDR requires an
 -- explicit /bits.
 
-BEGIN;
-
 -- Strict address parse. Returns the canonical text or NULL when the
 -- input is not a valid address under netip.ParseAddr rules.
 CREATE OR REPLACE FUNCTION cel._net_parse_ip(s text)
@@ -519,5 +517,3 @@ INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('network', 'type', 'net.IP'),
   ('network', 'type', 'net.CIDR')
 ON CONFLICT DO NOTHING;
-
-COMMIT;

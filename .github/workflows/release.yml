@@ -18,12 +18,14 @@ permissions:
 # between jobs -- fewer moving parts, and nothing to pin.
 
 jobs:
-  # The plain-scripts channel: the artifact is the initdb script
-  # for the same pinned image compose uses, and readiness is
-  # cel.version() answering. The all-in bundle and the core-only
-  # file are the two shapes that could break independently; each
-  # extension file is a verbatim copy of a sql/ script CI already
-  # installs.
+  # The plain-scripts channel, both shapes of the all-in bundle and
+  # the core-only file. A plain artifact must run inside a
+  # transaction it does not own: installed between BEGIN and
+  # ROLLBACK it has to leave no cel schema behind -- one stray
+  # COMMIT; would keep it -- and installed with --single-transaction
+  # it has to answer cel.version(). A -tx artifact installs with a
+  # bare psql -f. Each extension file is a verbatim copy of a sql/
+  # script CI already installs.
   smoke:
     if: >-
       github.repository == 'emfga/cel4postgres' &&
@@ -45,29 +47,48 @@ jobs:
             sql/000_install.sql)
           image=$(sed -n 's/^ *image: \(postgres:[^ ]*\)$/\1/p' \
             compose.yaml)
-          init=/docker-entrypoint-initdb.d/install.sql
-          for artifact in \
-            "cel4postgres--$version.sql" \
-            "cel4postgres-core--$version.sql"
-          do
-            echo "== $artifact"
-            docker run -d --rm --name relcheck \
-              -e POSTGRES_DB=cel -e POSTGRES_USER=cel \
-              -e POSTGRES_PASSWORD=pw \
-              -v "$PWD/dist/$artifact:$init:ro" \
-              "$image" >/dev/null
-            got=
-            for _ in $(seq 60); do
-              got=$(docker exec relcheck psql -U cel -d cel -tAc \
-                'SELECT cel.version()' 2>/dev/null) && break
-              sleep 2
-            done
-            docker rm -f relcheck >/dev/null
+          docker run -d --rm --name relcheck \
+            -e POSTGRES_DB=cel -e POSTGRES_USER=cel \
+            -e POSTGRES_PASSWORD=pw \
+            -v "$PWD/dist:/dist:ro" \
+            "$image" >/dev/null
+          # -h 127.0.0.1: over the socket, pg_isready can reach
+          # initdb's temporary server; only the final one listens
+          # on TCP.
+          for _ in $(seq 60); do
+            docker exec relcheck pg_isready -h 127.0.0.1 \
+              -U cel -d cel -q 2>/dev/null && break
+            sleep 2
+          done
+          sql() {
+            docker exec -e PGOPTIONS='-c client_min_messages=warning' \
+              relcheck psql -h 127.0.0.1 -U cel -d cel \
+              -v ON_ERROR_STOP=1 -q "$@"
+          }
+          check() {
+            got=$(sql -tAc 'SELECT cel.version()')
             if [ "$got" != "$version" ]; then
               echo "expected $version, got '$got'" >&2
               exit 1
             fi
+            sql -c 'DROP SCHEMA cel CASCADE'
+          }
+          for name in cel4postgres cel4postgres-core; do
+            plain="/dist/$name--$version.sql"
+            echo "== $plain"
+            sql -c 'BEGIN' -f "$plain" -c 'ROLLBACK'
+            left=$(sql -tAc "SELECT to_regnamespace('cel')")
+            if [ -n "$left" ]; then
+              echo "$plain committed on its own" >&2
+              exit 1
+            fi
+            sql --single-transaction -f "$plain"
+            check
+            echo "== /dist/$name-tx--$version.sql"
+            sql -f "/dist/$name-tx--$version.sql"
+            check
           done
+          docker rm -f relcheck >/dev/null
 
   # The flagship channel: the same dist/ files, wrapped by
   # scripts/pgtle-wrap.sh into pgtle.install_extension, installed

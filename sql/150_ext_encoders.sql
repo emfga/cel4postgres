@@ -2,8 +2,6 @@
 -- v0.32.0): base64.encode / base64.decode. Registered under the
 -- 'encoders' env.
 
-BEGIN;
-
 -- Go accepts both padded and raw (unpadded) standard base64
 -- (encoders.go:143-150); Postgres decode requires padding, so pad
 -- first.
@@ -60,5 +58,3 @@ INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('encoders', 'overload', 'base64_decode_string'),
   ('encoders', 'overload', 'base64_encode_bytes')
 ON CONFLICT DO NOTHING;
-
-COMMIT;

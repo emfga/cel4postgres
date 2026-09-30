@@ -10,8 +10,6 @@
 -- the attribute machinery, everything else EXECUTEs the row's impl.
 -- No CASE on a function name anywhere -- day-one invariant 1.
 
-BEGIN;
-
 -- Signature match for runtime overload selection: does an evaluated
 -- argument satisfy a declared argument type? Parameterized and
 -- dynamic types erase to "match anything" at runtime; containers
@@ -856,5 +854,3 @@ BEGIN
   RETURN cel.eval(ast, activation, env);
 END;
 $$;
-
-COMMIT;

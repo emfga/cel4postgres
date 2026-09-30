@@ -24,7 +24,14 @@ Download from the [releases page][releases]:
 | `cel4postgres--<version>.sql` | everything: core + all extensions |
 | `cel4postgres-core--<version>.sql` | core only (`cel.evaluate`, standard library, well-known types) |
 | `cel4postgres-ext_<name>--<version>.sql` | one extension library |
+| `cel4postgres…-tx--<version>.sql` | the same file, between one `BEGIN;` and one `COMMIT;` |
 | `SHA256SUMS` | checksums for all of the above |
+
+The plain files contain no transaction control, so they run inside
+a transaction someone else opens: psql's `--single-transaction`, a
+migration tool's, or pg_tle's `CREATE EXTENSION`. Each `-tx` twin
+opens and commits exactly one transaction of its own, for a bare
+`psql -f` that should still be all or nothing.
 
 Verify downloads before running them:
 
@@ -48,9 +55,13 @@ Run the artifact as a role that may create the `cel` schema —
 the database owner is enough; superuser is not needed:
 
 ```bash
-psql -v ON_ERROR_STOP=1 "$DATABASE_URL" \
+psql -v ON_ERROR_STOP=1 --single-transaction "$DATABASE_URL" \
   -f cel4postgres--<version>.sql
 ```
+
+or, equivalently, `psql -v ON_ERROR_STOP=1 -f
+cel4postgres-tx--<version>.sql`. Either way a failure leaves the
+database as it was.
 
 Then verify:
 
@@ -92,8 +103,9 @@ One-time instance setup (this part needs a reboot; see the
 
 Then register and install cel4postgres. The artifact is wrapped
 into a `pgtle.install_extension` call by a script from this
-repository (it strips top-level transaction statements, which are
-not allowed inside `CREATE EXTENSION`):
+repository. Wrap the plain files, not the `-tx` ones: transaction
+control is not allowed inside `CREATE EXTENSION`, and the script
+refuses a file that contains it.
 
 ```bash
 ./scripts/pgtle-wrap.sh cel4postgres <version> \
@@ -114,6 +126,18 @@ To uninstall:
 DROP EXTENSION cel4postgres;
 SELECT pgtle.uninstall_extension('cel4postgres');
 ```
+
+## Inside a migration tool
+
+Migration tools (Flyway, Liquibase, Kysely, Alembic, Rails, …)
+usually run each migration inside a transaction they own. Embed the
+plain `cel4postgres--<version>.sql` as the body of one migration and
+execute it as a single multi-statement string, without bind
+parameters — the file is many statements with `$$`-quoted function
+bodies, which PostgreSQL accepts only over the simple query
+protocol. The whole install then commits or rolls back with the
+migration. Do not embed a `-tx` file: its `COMMIT;` would end the
+tool's transaction halfway through.
 
 ## Access control
 

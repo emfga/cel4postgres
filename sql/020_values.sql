@@ -3,8 +3,6 @@
 -- Run after 000_install.sql. Everything here is a pure function over
 -- tagged jsonb values or their scalar payloads; nothing reads a table.
 
-BEGIN;
-
 -- Renders a finite double the way CEL's string(double) must: cel-go
 -- delegates to Go's %g (common/types/double.go:141, pinned v0.32.0).
 -- Postgres's own float8 output is close but measurably different in
@@ -127,10 +125,6 @@ BEGIN
   RETURN neg || '0.' || repeat('0', -e - 1) || digits;
 END;
 $$;
-
-COMMIT;
-
-BEGIN;
 
 -- Tagged-value primitives. The kind tag carries type identity;
 -- these helpers are the single place equality, ordering and payload
@@ -465,10 +459,6 @@ BEGIN
 END;
 $$;
 
-COMMIT;
-
-BEGIN;
-
 -- Exact float8 -> numeric. The built-in cast goes through the
 -- shortest decimal text, which identifies the double uniquely but is
 -- NOT its exact binary value (36028797018963968::float8::numeric
@@ -506,5 +496,3 @@ BEGIN
          * ('1e' || e)::numeric;
 END;
 $$;
-
-COMMIT;

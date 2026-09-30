@@ -143,9 +143,12 @@ numeric prefix. Nothing about them is specific to the compose setup:
 
 ```bash
 for f in sql/*.sql; do
-  psql -v ON_ERROR_STOP=1 -f "$f" "$YOUR_DATABASE_URL"
+  psql -v ON_ERROR_STOP=1 -1 -f "$f" "$YOUR_DATABASE_URL"
 done
 ```
+
+The scripts open no transaction of their own; `-1` makes each file
+all or nothing.
 
 It needs a role that may create the `cel` schema. It does not need
 superuser. [docs/INSTALL.md](docs/INSTALL.md) is the full guide:

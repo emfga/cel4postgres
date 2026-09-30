@@ -10,8 +10,6 @@
 -- lexical rules follow it exactly, including the newline
 -- normalization applied to every literal form.
 
-BEGIN;
-
 -- Lexes one string or bytes literal. pos points at the opening quote
 -- (prefixes r/R/b/B already consumed by the caller). Returns the
 -- decoded value: text for strings, base64 text for bytes. ni is the
@@ -428,10 +426,6 @@ BEGIN
 END;
 $$;
 
-COMMIT;
-
-BEGIN;
-
 -- Line/column (both 0-based line, 0-based col) for an offset, for
 -- parse error reporting. Conformance never string-matches parse
 -- errors; this exists for humans.
@@ -620,10 +614,6 @@ BEGIN
 END;
 $$;
 
-COMMIT;
-
-BEGIN;
-
 -- Hex digits to numeric (uint64-sized values overflow bigint).
 CREATE OR REPLACE FUNCTION cel._p_hex(h text)
 RETURNS numeric
@@ -771,10 +761,6 @@ BEGIN
   nid := x.next_id_out;
 END;
 $$;
-
-COMMIT;
-
-BEGIN;
 
 -- The recursive grammar. Every function shares one signature:
 --   (tk, p, id, d, mac, fl) -> (node, np, nid, err, ep)
@@ -1347,10 +1333,6 @@ BEGIN
 END;
 $$;
 
-COMMIT;
-
-BEGIN;
-
 -- List literal: '[' consumed. Trailing comma allowed. '?e' elements
 -- (optionals extension) record their indices under "opt".
 CREATE OR REPLACE FUNCTION cel._p_list(
@@ -1749,10 +1731,6 @@ BEGIN
   np := np + 1;
 END;
 $$;
-
-COMMIT;
-
-BEGIN;
 
 -- Macro expanders. Each has the registry signature
 --   (target jsonb, args jsonb, next_id bigint)
@@ -2178,5 +2156,3 @@ BEGIN
       'macro_calls', fin.macro_calls));
 END;
 $$;
-
-COMMIT;

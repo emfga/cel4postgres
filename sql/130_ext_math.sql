@@ -8,8 +8,6 @@
 -- mod by exact powers of two) because Postgres bigint shifts take
 -- the count mod 64, and uint64 values do not fit bigint.
 
-BEGIN;
-
 CREATE OR REPLACE FUNCTION cel._math_ident(args jsonb[])
 RETURNS jsonb
 LANGUAGE sql
@@ -647,5 +645,3 @@ INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('math', 'macro', 'least/-1/1'),
   ('math', 'macro', 'greatest/-1/1')
 ON CONFLICT DO NOTHING;
-
-COMMIT;

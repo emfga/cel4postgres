@@ -16,8 +16,6 @@
 -- Errors fail fast: conformance asserts on check-failure existence,
 -- never on collecting several.
 
-BEGIN;
-
 -- Type formatting for error messages (checker/format.go, loosely).
 CREATE OR REPLACE FUNCTION cel._t_fmt(t jsonb)
 RETURNS text
@@ -446,10 +444,6 @@ BEGIN
 END;
 $$;
 
-COMMIT;
-
-BEGIN;
-
 -- Fresh type variables and parameter instantiation.
 CREATE OR REPLACE FUNCTION cel._ck_collect_params(t jsonb)
 RETURNS text[]
@@ -762,10 +756,6 @@ BEGIN
   END LOOP;
 END;
 $$;
-
-COMMIT;
-
-BEGIN;
 
 -- Literal kinds to checker types.
 CREATE OR REPLACE FUNCTION cel._ck_lit_type(v jsonb)
@@ -1347,5 +1337,3 @@ SET search_path = cel, pg_temp
 AS $$
   SELECT cel.check(ast, env, NULL);
 $$;
-
-COMMIT;

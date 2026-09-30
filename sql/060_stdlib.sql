@@ -12,8 +12,6 @@
 -- with the three non-finite sentinels, Go-style truncated division
 -- and remainder.
 
-BEGIN;
-
 -- Integer (int64) checked arithmetic. Postgres numeric is exact, so
 -- overflow is a range check, not a wraparound.
 
@@ -576,10 +574,6 @@ AS $$
   SELECT args[1];
 $$;
 
-COMMIT;
-
-BEGIN;
-
 -- Overload rows. Ids are cel-go's exactly (common/overloads); the
 -- checker binds them and conformance's type_deduction output depends
 -- on them. The absorbed ids carry NULL impls -- the evaluator core
@@ -801,10 +795,6 @@ ON CONFLICT DO NOTHING;
 INSERT INTO cel.env_item (env, kind, ref)
 SELECT 'standard', 'type', name FROM cel.type
 ON CONFLICT DO NOTHING;
-
-COMMIT;
-
-BEGIN;
 
 -- Part 2: type conversions and string functions. Conversion
 -- semantics are cel-go's exactly (common/types + overflow.go,
@@ -1281,5 +1271,3 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO cel.env_item (env, kind, ref)
 SELECT 'standard', 'overload', id FROM cel.overload
 ON CONFLICT DO NOTHING;
-
-COMMIT;
