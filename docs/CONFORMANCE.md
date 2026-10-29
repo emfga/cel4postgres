@@ -19,7 +19,7 @@ Three things pin what that sentence means:
 | | |
 |---|---|
 | corpus | cel-spec at `ba58ae5007845f3a1279b488cdeb79645ce958bb` |
-| reference | cel-go `v0.32.0` |
+| reference | cel-go `v0.33.1` |
 | substrate | PostgreSQL 18 |
 
 All three are pinned deliberately and move only with a
@@ -136,7 +136,7 @@ expression and both verdicts.
 The spec text is settled: `double` and `null` are not valid map key
 types, and duplicate keys are an error at construction — including
 keys that collide only after `int`/`uint` normalization, as in
-`{0: 1, 0u: 2}`. The corpus expects an error; cel-go v0.32.0 returns a
+`{0: 1, 0u: 2}`. The corpus expects an error; cel-go v0.33.1 returns a
 value and annotates the cases with its current behaviour as a
 comment. cel4postgres errors.
 
@@ -148,7 +148,7 @@ planning rather than when evaluating.)
 `timestamps/duration_converters/get_milliseconds`
 
 The corpus expects the sub-second component — `321` for a duration of
-123s 321456789ns. cel-go v0.32.0 returns total milliseconds
+123s 321456789ns. cel-go v0.33.1 returns total milliseconds
 (`123321`). cel-java's `GetMillisecondsFunction` computes
 `toMillis(arg) % 1000`, agreeing with the corpus, and the corpus's own
 description marks the total-milliseconds reading as the one being
@@ -196,7 +196,7 @@ the nullable type.
 
 The corpus accepts the hex form `::ffff:c0a8:1` and treats it as
 equal to the IPv4 address it maps to, while rejecting the dotted form
-`::ffff:192.168.0.1`. cel-go v0.32.0's `parseIPAddr` rejects both, and
+`::ffff:192.168.0.1`. cel-go v0.33.1's `parseIPAddr` rejects both, and
 its conformance harness does not run `network_ext` at all — so there
 is no reference position to weigh here, only the corpus, and the
 corpus is what cel4postgres implements.

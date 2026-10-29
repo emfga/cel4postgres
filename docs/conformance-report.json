@@ -1,6 +1,6 @@
 {
   "cel_spec": "ba58ae5007845f3a1279b488cdeb79645ce958bb",
-  "cel_go": "v0.32.0",
+  "cel_go": "v0.33.1",
   "postgres": "18",
   "totals": {
     "files": 31,

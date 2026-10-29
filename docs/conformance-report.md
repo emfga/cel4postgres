@@ -15,7 +15,7 @@ divergences listed at the end.
 | | |
 |---|---|
 | cel-spec corpus | `ba58ae5007845f3a1279b488cdeb79645ce958bb` |
-| cel-go | `v0.32.0` |
+| cel-go | `v0.33.1` |
 | PostgreSQL | 18 |
 
 ## Summary

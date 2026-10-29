@@ -30,7 +30,7 @@ import (
 // version, so an upgrade is a deliberate change that re-measures
 // conformance, never a routine bump. This constant exists so a test
 // can assert the two have not drifted apart.
-const Version = "v0.32.0"
+const Version = "v0.33.1"
 
 // Env returns a CEL environment carrying only the standard library.
 func Env(options ...cel.EnvOption) (*cel.Env, error) {

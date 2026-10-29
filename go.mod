@@ -3,7 +3,7 @@ module github.com/emfga/cel4postgres
 go 1.27
 
 require (
-	cel.dev/cel-go v0.32.0
+	cel.dev/cel-go v0.33.1
 	cel.dev/expr v0.25.3
 	github.com/jackc/pgx/v5 v5.11.0
 	google.golang.org/protobuf v1.36.12

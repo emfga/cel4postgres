@@ -24,13 +24,22 @@ var envOptions = map[string][]cel.EnvOption{
 		cel.CrossTypeNumericComparisons(true),
 		cel.EnableErrorOnBadPresenceTest(true),
 	},
+	// Libraries whose latest version declares functions sql/ does
+	// not register are pinned to the version it implements: an
+	// unversioned library widens the reference env on every cel-go
+	// bump, and an oracle that knows overloads the evaluator lacks
+	// is configured differently from it. Lists 5 adds hasOnly /
+	// hasAny / hasAll / hasExactly; encoders 2 adds
+	// base64.encodeUrl / decodeUrl and json / yaml; optionals 3
+	// adds optional.hasValue(v) and 4 re-expands optMap /
+	// optFlatMap (both cel-go v0.33.0).
 	"strings":  {ext.Strings()},
 	"math":     {ext.Math()},
-	"lists":    {ext.Lists()},
-	"encoders": {ext.Encoders()},
+	"lists":    {ext.Lists(ext.ListsVersion(4))},
+	"encoders": {ext.Encoders(ext.EncodersVersion(1))},
 	"bindings": {ext.Bindings()},
 	"optionals": {
-		cel.OptionalTypes(),
+		cel.OptionalTypes(cel.OptionalTypesVersion(2)),
 	},
 	"two_var_comprehensions": {ext.TwoVarComprehensions()},
 	"network":                {ext.Network()},
