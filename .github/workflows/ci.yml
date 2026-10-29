@@ -83,3 +83,9 @@ jobs:
       - name: Dump database logs
         if: failure()
         run: docker compose logs --no-color
+
+  # Every pull request also upgrades from the latest release, so a
+  # change that breaks the upgrade is caught when it is made, not
+  # when the release workflow refuses to publish.
+  upgrade:
+    uses: ./.github/workflows/upgrade.yml

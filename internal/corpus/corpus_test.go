@@ -74,28 +74,35 @@ func TestPinMatchesWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	path := filepath.Join(root, ".github", "workflows", "ci.yml")
-	source, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read ci.yml: %v", err)
-	}
-
 	pattern := regexp.MustCompile(
 		`repository:\s*cel-expr/cel-spec\s*\n\s*ref:\s*([0-9a-f]{40})`,
 	)
 
-	match := pattern.FindSubmatch(source)
-	if match == nil {
-		t.Fatal("ci.yml does not check cel-expr/cel-spec out by commit")
-	}
+	// Every workflow that runs the suite checks the corpus out
+	// itself: CI on a fresh install, and the upgrade job on an
+	// upgraded one.
+	for _, name := range []string{"ci.yml", "upgrade.yml"} {
+		path := filepath.Join(root, ".github", "workflows", name)
+		source, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
 
-	if ref := string(match[1]); ref != Pin {
-		t.Fatalf(
-			"ci.yml checks out cel-spec %s but corpus.Pin says %s\n"+
-				"The corpus defines what the conformance number means: "+
-				"move both together, with a re-measurement behind it.",
-			ref, Pin,
-		)
+		match := pattern.FindSubmatch(source)
+		if match == nil {
+			t.Fatalf("%s does not check cel-expr/cel-spec out by commit",
+				name)
+		}
+
+		if ref := string(match[1]); ref != Pin {
+			t.Fatalf(
+				"%s checks out cel-spec %s but corpus.Pin says %s\n"+
+					"The corpus defines what the conformance number "+
+					"means: move both together, with a re-measurement "+
+					"behind it.",
+				name, ref, Pin,
+			)
+		}
 	}
 }
 

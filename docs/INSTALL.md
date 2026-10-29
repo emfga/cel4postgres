@@ -165,10 +165,37 @@ reads the registry tables. The role still cannot register anything
 `SELECT cel.version()` reports the installed version, recorded in
 `cel.schema_version` at install time.
 
-There is no in-place upgrade path yet: moving to a new version
-means uninstalling and installing the new artifact. Note that this
-also removes anything you registered in the registry tables
-yourself — re-register after reinstalling.
+To upgrade, run the new release's artifact over the installed one,
+exactly as you installed it. The installer is idempotent: it
+replaces every function and every registry row it ships, and leaves
+alone anything you registered yourself.
+
+```bash
+psql -v ON_ERROR_STOP=1 --single-transaction "$DATABASE_URL" \
+  -f cel4postgres--<new>.sql
+```
+
+Through pg_tle, register the new bundle as an update path and
+update the extension:
+
+```bash
+./scripts/pgtle-wrap.sh --update-from <old> cel4postgres <new> \
+  cel4postgres--<new>.sql > cel4postgres-update.pgtle.sql
+
+psql -v ON_ERROR_STOP=1 "$DATABASE_URL" \
+  -f cel4postgres-update.pgtle.sql \
+  -c "ALTER EXTENSION cel4postgres UPDATE TO '<new>';"
+```
+
+Both paths are tested before every release: CI installs the
+previous release, registers an overload of its own, upgrades to
+the new build, and runs the full conformance suite against the
+upgraded database. The upgrade tested is from the immediately
+previous release; when skipping versions, upgrade through each.
+
+A release that adds functions needs the access-control grants
+re-run afterwards: `GRANT … ON ALL FUNCTIONS` covers only the
+functions that existed when it ran.
 
 [releases]: https://github.com/emfga/cel4postgres/releases
 [pg_tle]: https://github.com/aws/pg_tle

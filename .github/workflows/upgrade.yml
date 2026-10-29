@@ -1,0 +1,82 @@
+name: Upgrade
+
+# Upgrade coverage: no release without it. Installs the latest
+# published release (N-1) the way a consumer did, registers a
+# consumer overload, upgrades to this checkout's build, and runs the
+# full suite against the upgraded database. Both shipped channels:
+# plain psql scripts and pg_tle's ALTER EXTENSION ... UPDATE.
+#
+# Reusable only: CI runs it on every pull request, and the release
+# workflow's publish job needs it.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [plain, pgtle]
+    steps:
+      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The latest release is N-1 by construction: the release
+      # workflow refuses to publish a version that already exists.
+      - name: Download the previous release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download -R "$GITHUB_REPOSITORY" -D "$RUNNER_TEMP/prev" \
+            -p 'cel4postgres--*.sql' -p SHA256SUMS
+
+      - name: Build images and artifacts
+        run: |
+          ./scripts/build-release.sh
+          base=$(sed -n 's/^ *image: \(postgres:[^ ]*\)$/\1/p' \
+            compose.yaml)
+          if [ "${{ matrix.channel }}" = pgtle ]; then
+            docker build -f docker/pg_tle.Dockerfile \
+              --build-arg BASE_IMAGE="$base" -t pgtle .
+            image=pgtle
+          else
+            image=$base
+          fi
+          echo "IMAGE=$image" >>"$GITHUB_ENV"
+
+      - name: Upgrade from the previous release
+        run: |
+          ./scripts/upgrade-check.sh "${{ matrix.channel }}" "$IMAGE" \
+            "$RUNNER_TEMP/prev" 5432
+
+      # Same corpus pin as ci.yml; a test checks both against
+      # internal/corpus.Pin.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: cel-expr/cel-spec
+          ref: ba58ae5007845f3a1279b488cdeb79645ce958bb
+          path: .cel-expr/cel-spec
+
+      # An upgraded database has to be exactly as conformant as a
+      # fresh install.
+      - run: go test ./... -v
+        env:
+          CEL_EXPR_DIR: ${{ github.workspace }}/.cel-expr
+          DATABASE_URL: postgres://cel:pw@127.0.0.1:5432/cel?sslmode=disable
+
+      - name: Dump database logs
+        if: failure()
+        run: docker logs "cel-upgrade-${{ matrix.channel }}"

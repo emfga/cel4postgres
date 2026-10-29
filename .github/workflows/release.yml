@@ -229,6 +229,16 @@ jobs:
             exit 1
           fi
 
+  # Upgrade coverage (rds-distribution decision 8): the latest
+  # release upgraded to this build through both channels, with a
+  # consumer registration surviving and the full suite green on
+  # the upgraded database. No tag is cut without it.
+  upgrade:
+    if: >-
+      github.repository == 'emfga/cel4postgres' &&
+      github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/upgrade.yml
+
   # The tag does not exist beforehand; gh creates it at the
   # released commit, and re-running on an already-released
   # version fails here instead of republishing.
@@ -236,7 +246,7 @@ jobs:
     if: >-
       github.repository == 'emfga/cel4postgres' &&
       github.ref == 'refs/heads/main'
-    needs: [smoke, pgtle]
+    needs: [smoke, pgtle, upgrade]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
