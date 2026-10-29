@@ -262,7 +262,7 @@ specified one: two independent implementations agreeing is evidence about
 the spec; one is evidence about that implementation.
 
 **cel-go is pinned exactly in `go.mod` and stays exactly pinned**
-(`cel.dev/cel-go v0.32.0`). The set of expressions the two
+(`cel.dev/cel-go v0.33.1`). The set of expressions the two
 implementations agree on moves with the version, so an upgrade is a
 deliberate change with a re-measurement behind it, never a routine bump
 or a transitive one. `internal/oracle.Version` restates the pin and a
