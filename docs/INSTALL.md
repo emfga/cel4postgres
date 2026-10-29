@@ -87,7 +87,7 @@ artifact. No parameter group changes, no reboot.
 for installing extensions without filesystem access. It gets you
 real extension semantics: the version shows in `\dx`, and
 `DROP EXTENSION cel4postgres` removes everything cleanly. This
-path is validated in CI against pg_tle v1.5.2 for every release.
+path is validated in CI against pg_tle v1.5.3 for every release.
 
 One-time instance setup (this part needs a reboot; see the
 [AWS documentation][aws-tle]):

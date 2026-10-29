@@ -118,7 +118,7 @@ overrides all of them.
 ## Developing with a local Go toolchain
 
 The containerised suite is the reference, but running the tests directly
-is faster to iterate on. Go 1.26 or newer:
+is faster to iterate on. Go 1.27 or newer:
 
 ```bash
 docker compose up -d
