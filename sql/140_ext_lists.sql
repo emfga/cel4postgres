@@ -1,6 +1,8 @@
--- The lists extension (cel-go ext/lists.go at the pinned v0.32.0):
--- slice, flatten, sort, sortBy (macro over @sortByAssociatedKeys),
--- lists.range, reverse, distinct. Registered under the 'lists' env.
+-- The lists extension (cel-go ext/lists.go at the pinned v0.33.1,
+-- library version 5): slice, flatten, sort, sortBy (macro over
+-- @sortByAssociatedKeys), lists.range, reverse, distinct, and the
+-- membership tests hasOnly / hasAny / hasAll / hasExactly.
+-- Registered under the 'lists' env.
 
 CREATE OR REPLACE FUNCTION cel._list_val(elems jsonb)
 RETURNS jsonb
@@ -405,4 +407,100 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('lists', 'macro', 'sortBy/2/1')
+ON CONFLICT DO NOTHING;
+
+-- Membership tests (library version 5). Each compares elements with
+-- CEL equality, so [1, 2.0, 3u].hasAll([1.0, 2u, 3]) holds, and
+-- treats both lists as sets: duplicates and sizes do not matter.
+--
+--   a.hasOnly(b)     every element of a is in b    (a subset of b)
+--   a.hasAll(b)      every element of b is in a    (a superset of b)
+--   a.hasAny(b)      some element of a is in b     (false if empty)
+--   a.hasExactly(b)  both of the above             (set-equal)
+
+-- Whether every element of needles has an equal in haystack.
+CREATE OR REPLACE FUNCTION cel._list_covers(haystack jsonb,
+                                            needles jsonb)
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT NOT EXISTS (
+    SELECT FROM jsonb_array_elements(needles) n
+    WHERE NOT EXISTS (
+      SELECT FROM jsonb_array_elements(haystack) h
+      WHERE cel._equal(n, h)
+    )
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_list_has_only(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val(cel._list_covers(args[2] -> 'v', args[1] -> 'v'));
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_list_has_all(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val(cel._list_covers(args[1] -> 'v', args[2] -> 'v'));
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_list_has_exactly(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val(
+    cel._list_covers(args[1] -> 'v', args[2] -> 'v')
+    AND cel._list_covers(args[2] -> 'v', args[1] -> 'v'));
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_list_has_any(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val(EXISTS (
+    SELECT FROM jsonb_array_elements(args[1] -> 'v') a,
+                jsonb_array_elements(args[2] -> 'v') b
+    WHERE cel._equal(a, b)
+  ));
+$$;
+
+INSERT INTO cel.overload
+  (id, function, member, arg_types, result_type, impl, ordinal)
+SELECT 'list_' || f || '_list', f, true,
+       '[{"kind": "list", "params": [{"kind": "param", "name": "T"}]},
+         {"kind": "list", "params": [{"kind": "param", "name": "T"}]}]',
+       '{"kind": "bool"}',
+       impl::regprocedure, 10
+FROM (VALUES
+  ('hasOnly', 'cel._f_list_has_only(jsonb[])'),
+  ('hasAny', 'cel._f_list_has_any(jsonb[])'),
+  ('hasAll', 'cel._f_list_has_all(jsonb[])'),
+  ('hasExactly', 'cel._f_list_has_exactly(jsonb[])')
+) v(f, impl)
+ON CONFLICT (id) DO UPDATE SET
+  function = excluded.function,
+  member = excluded.member,
+  arg_types = excluded.arg_types,
+  result_type = excluded.result_type,
+  impl = excluded.impl,
+  ordinal = excluded.ordinal;
+
+INSERT INTO cel.env_item (env, kind, ref) VALUES
+  ('lists', 'overload', 'list_hasOnly_list'),
+  ('lists', 'overload', 'list_hasAny_list'),
+  ('lists', 'overload', 'list_hasAll_list'),
+  ('lists', 'overload', 'list_hasExactly_list')
 ON CONFLICT DO NOTHING;
