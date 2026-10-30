@@ -1,9 +1,9 @@
 -- The optionals extension, part one: the optional_type opaque type
 -- and the optional.of / optional.ofNonZeroValue / optional.none /
 -- value / hasValue functions (cel-go cel/library.go optionals, pinned
--- v0.32.0). Part two, further down, adds the optional-syntax sugar
--- (x.?f, [?x], {?k: v}), or / orValue, and the optMap/optFlatMap
--- macros.
+-- v0.33.1, library version 4). Part two, further down, adds the
+-- optional-syntax sugar (x.?f, [?x], {?k: v}), or / orValue, and the
+-- optMap/optFlatMap macros.
 --
 -- An optional value is the opaque
 --   {"@t": "opaque", "type": "optional_type", "v":
@@ -151,6 +151,130 @@ INSERT INTO cel.env_item (env, kind, ref) VALUES
   ('optionals', 'overload', 'optional_hasValue')
 ON CONFLICT DO NOTHING;
 
+-- opt.hasValue(v) (library version 3): whether the optional holds a
+-- value equal to v, i.e. opt.hasValue() ? opt.value() == v : false.
+-- v is compared as it is and never unwrapped, so
+-- optional.of(42).hasValue(dyn(optional.of(42))) is false.
+CREATE OR REPLACE FUNCTION cel._f_opt_has_value_value(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT cel._bool_val((args[1] -> 'v' ->> 'p')::boolean
+                       AND cel._equal(args[1] -> 'v' -> 'v', args[2]));
+$$;
+
+INSERT INTO cel.overload
+  (id, function, member, arg_types, result_type, impl, ordinal)
+VALUES
+  ('optional_hasValue_value', 'hasValue', true,
+   '[{"kind": "opaque", "name": "optional_type",
+      "params": [{"kind": "param", "name": "V"}]},
+     {"kind": "param", "name": "V"}]',
+   '{"kind": "bool"}',
+   'cel._f_opt_has_value_value(jsonb[])', 20)
+ON CONFLICT (id) DO UPDATE SET
+  function = excluded.function,
+  member = excluded.member,
+  arg_types = excluded.arg_types,
+  result_type = excluded.result_type,
+  impl = excluded.impl,
+  ordinal = excluded.ordinal;
+
+INSERT INTO cel.env_item (env, kind, ref) VALUES
+  ('optionals', 'overload', 'optional_hasValue_value')
+ON CONFLICT DO NOTHING;
+
+-- List helpers (library version 2): first() / last() lift the end
+-- elements of a list into optionals, and optional.unwrap(l) /
+-- l.unwrapOpt() keep the values of the present optionals in l.
+CREATE OR REPLACE FUNCTION cel._f_list_first(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT CASE WHEN jsonb_array_length(args[1] -> 'v') = 0
+              THEN cel._opt_none()
+              ELSE cel._opt_of(args[1] -> 'v' -> 0) END;
+$$;
+
+CREATE OR REPLACE FUNCTION cel._f_list_last(args jsonb[])
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT CASE WHEN jsonb_array_length(args[1] -> 'v') = 0
+              THEN cel._opt_none()
+              ELSE cel._opt_of(args[1] -> 'v' -> -1) END;
+$$;
+
+-- An element that is not an optional can only arrive through dyn;
+-- it is an error, not something to skip.
+CREATE OR REPLACE FUNCTION cel._f_opt_unwrap(args jsonb[])
+RETURNS jsonb
+LANGUAGE plpgsql
+IMMUTABLE PARALLEL SAFE
+SET search_path = cel, pg_temp
+AS $$
+DECLARE
+  e jsonb;
+  o jsonb := '[]'::jsonb;
+BEGIN
+  FOR e IN SELECT x FROM jsonb_array_elements(args[1] -> 'v') x LOOP
+    IF e ->> '@t' <> 'opaque' OR e ->> 'type' <> 'optional_type' THEN
+      RETURN cel._err(format('value %s is not optional', e ->> 'v'));
+    END IF;
+    IF (e -> 'v' ->> 'p')::boolean THEN
+      o := o || jsonb_build_array(e -> 'v' -> 'v');
+    END IF;
+  END LOOP;
+  RETURN jsonb_build_object('@t', 'list', 'v', o);
+END;
+$$;
+
+INSERT INTO cel.overload
+  (id, function, member, arg_types, result_type, impl, ordinal)
+VALUES
+  ('list_last', 'last', true,
+   '[{"kind": "list", "params": [{"kind": "param", "name": "V"}]}]',
+   '{"kind": "opaque", "name": "optional_type",
+     "params": [{"kind": "param", "name": "V"}]}',
+   'cel._f_list_last(jsonb[])', 10),
+  ('list_first', 'first', true,
+   '[{"kind": "list", "params": [{"kind": "param", "name": "V"}]}]',
+   '{"kind": "opaque", "name": "optional_type",
+     "params": [{"kind": "param", "name": "V"}]}',
+   'cel._f_list_first(jsonb[])', 10),
+  ('optional_unwrap', 'optional.unwrap', false,
+   '[{"kind": "list", "params": [{"kind": "opaque",
+      "name": "optional_type",
+      "params": [{"kind": "param", "name": "V"}]}]}]',
+   '{"kind": "list", "params": [{"kind": "param", "name": "V"}]}',
+   'cel._f_opt_unwrap(jsonb[])', 10),
+  ('optional_unwrapOpt', 'unwrapOpt', true,
+   '[{"kind": "list", "params": [{"kind": "opaque",
+      "name": "optional_type",
+      "params": [{"kind": "param", "name": "V"}]}]}]',
+   '{"kind": "list", "params": [{"kind": "param", "name": "V"}]}',
+   'cel._f_opt_unwrap(jsonb[])', 10)
+ON CONFLICT (id) DO UPDATE SET
+  function = excluded.function,
+  member = excluded.member,
+  arg_types = excluded.arg_types,
+  result_type = excluded.result_type,
+  impl = excluded.impl,
+  ordinal = excluded.ordinal;
+
+INSERT INTO cel.env_item (env, kind, ref) VALUES
+  ('optionals', 'overload', 'list_last'),
+  ('optionals', 'overload', 'list_first'),
+  ('optionals', 'overload', 'optional_unwrap'),
+  ('optionals', 'overload', 'optional_unwrapOpt')
+ON CONFLICT DO NOTHING;
+
 -- Part two: the optional-syntax operators, or/orValue, and the
 -- optMap/optFlatMap macros (cel/library.go optionals block,
 -- cel/library.go:430-560 at the pinned v0.32.0).
@@ -264,7 +388,9 @@ AS $$
               THEN args[1] -> 'v' -> 'v' ELSE args[2] END;
 $$;
 
--- optMap / optFlatMap (cel/library.go optMap/optFlatMap): expand to
+-- optMap / optFlatMap (cel/library.go optMapV2/optFlatMapV2, the
+-- library-version-4 expansion that evaluates the target once): expand
+-- to
 --   target.hasValue()
 --     ? <of?>(bind(v, target.value(), expr))
 --     : optional.none()
