@@ -201,6 +201,33 @@ its conformance harness does not run `network_ext` at all — so there
 is no reference position to weigh here, only the corpus, and the
 corpus is what cel4postgres implements.
 
+## Library coverage beyond the corpus
+
+The corpus calls a fraction of each extension library, and nothing in
+the pinned release calls what cel-go added since. Two tests close
+that gap. `TestLibraryOverloads` compares every overload id the
+reference declares in each environment with the registry's rows,
+and fails on any it lacks that is not named as known-missing.
+`TestLibraryCases` runs the functions the corpus never reaches —
+`hasOnly` / `hasAny` / `hasAll` / `hasExactly`, `base64.encodeUrl` /
+`decodeUrl`, `optional.hasValue(v)`, `first` / `last` /
+`unwrapOpt`, and the single-evaluation `optMap` / `optFlatMap` —
+through both implementations, cel-go's outcome as the expectation.
+
+The libraries run at cel-go's latest versions, with one exception:
+**the JSON and YAML encoders are not implemented**, and the
+reference holds `encoders` at version 2 so it cannot grow past what
+was measured. Missing are `json.encode` (version 1) and `json.parse`,
+`yaml.encode` and `yaml.parse` (version 2); both tests print them.
+YAML needs a YAML 1.2 parser and emitter, which is not a reasonable
+thing to write in PL/pgSQL. `json.parse(s, T)` converts by any CEL
+type through cel-go's type provider, and `json.encode` reproduces Go
+details — float formatting, HTML-safe escaping, integers quoted past
+2^53, protobuf JSON for timestamps and durations — that a port would
+match only partly. A half-faithful encoder is worse than an absent
+one: a call that fails to type-check is visible, a subtly different
+string is not.
+
 ## Divergences the corpus does not cover
 
 Three behaviours differ from cel-go without a corpus case to record
