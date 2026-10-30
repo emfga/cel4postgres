@@ -162,4 +162,14 @@ expect "SELECT count(*) FROM cel.overload
         WHERE id = 'consumer_shout_string'" 1
 expect "$probe" "$want"
 
+# Nothing the upgrade did not ship into standard may end up there:
+# not the consumer's overload, and not an extension's items.
+expect "SELECT count(*) FROM cel.env_item
+        WHERE env = 'standard' AND ref = 'consumer_shout_string'" 0
+expect "SELECT count(*) FROM cel.env_item s
+        WHERE s.env = 'standard' AND EXISTS (
+          SELECT FROM cel.env_item o
+          WHERE o.kind = s.kind AND o.ref = s.ref
+            AND o.env <> 'standard')" 0
+
 echo "upgraded $prev -> $head; consumer registration intact"

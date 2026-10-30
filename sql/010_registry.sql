@@ -157,6 +157,45 @@ AS $$
   );
 $$;
 
+-- The core scripts put "everything registered so far" into the
+-- standard env. On a fresh install that is exactly the core: the
+-- extension scripts run later. Run again over an installed schema --
+-- which is what an upgrade is -- the same sweep would also catch
+-- every extension row and every consumer row, enabling them in
+-- standard. A row is only swept when no env claims it yet and, if it
+-- has an implementation, that implementation lives in the cel
+-- schema.
+CREATE OR REPLACE FUNCTION cel._unclaimed(kind text, ref text,
+                                          impl regprocedure)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = cel, pg_temp
+AS $$
+  SELECT NOT EXISTS (
+           SELECT FROM cel.env_item i
+           WHERE i.kind = _unclaimed.kind AND i.ref = _unclaimed.ref
+         )
+     AND (impl IS NULL
+          OR (SELECT pronamespace FROM pg_proc WHERE oid = impl)
+             = 'cel'::regnamespace);
+$$;
+
+-- Repair for schemas reinstalled before that guard existed (0.0.2
+-- and earlier): drop from standard what a shipped extension env
+-- also lists. On a fresh install nothing matches -- no shipped item
+-- is in two envs. A consumer row swept the same way cannot be told
+-- apart from one put in standard on purpose, so it stays.
+DELETE FROM cel.env_item s
+WHERE s.env = 'standard'
+  AND EXISTS (
+    SELECT FROM cel.env_item o
+    WHERE o.kind = s.kind AND o.ref = s.ref
+      AND o.env IN ('strings', 'math', 'lists', 'encoders',
+                    'bindings', 'two_var_comprehensions',
+                    'optionals', 'network')
+  );
+
 -- The spec-conformant default environment. Its items are seeded by
 -- the scripts that create the functions they reference. The
 -- identifier-escape syntax (`a-b`) is part of standard parsing

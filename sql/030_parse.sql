@@ -2091,6 +2091,8 @@ ON CONFLICT (name, arity, member) DO UPDATE SET expander = excluded.expander;
 INSERT INTO cel.env_item (env, kind, ref)
 SELECT 'standard', 'macro', format('%s/%s/%s', name, arity, member::int)
 FROM cel.macro
+WHERE cel._unclaimed('macro',
+        format('%s/%s/%s', name, arity, member::int), expander)
 ON CONFLICT DO NOTHING;
 
 -- Parses CEL source under an environment. Returns the AST envelope,

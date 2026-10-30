@@ -870,8 +870,10 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO cel.env_item (env, kind, ref)
 SELECT 'standard', 'type', name FROM cel.type
 WHERE name LIKE 'google.protobuf.%'
+  AND cel._unclaimed('type', name, NULL)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO cel.env_item (env, kind, ref)
 SELECT 'standard', 'overload', id FROM cel.overload
+WHERE cel._unclaimed('overload', id, impl)
 ON CONFLICT DO NOTHING;
